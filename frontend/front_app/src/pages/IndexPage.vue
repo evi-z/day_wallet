@@ -5,12 +5,13 @@
             <div class="grid-item-source">
                 <q-card class="full-height">
                     <q-card-section class="card-title-section">
-                        <div class="text-subtitle1">Исходные данные</div>
+                        <div class="text-subtitle1 card-title-text">Исходные данные</div>
                     </q-card-section>
-                    <q-separator></q-separator>
+                    <!-- <q-separator></q-separator> -->
                     <q-card-section class="no-padding card-table-section">
-                        <q-table class="full-height" :columns="InitAndCurrentDataColumns" :rows="InitDataRows" hide-header dense
-                            :rows-per-page="[0]" v-model:pagination="initCurrentPagination" hide-bottom></q-table>
+                        <q-table square flat class="full-height page-table" :columns="InitAndCurrentDataColumns"
+                            :rows="InitDataRows" hide-header dense :rows-per-page="[0]"
+                            v-model:pagination="initCurrentPagination" hide-bottom separator="cell"></q-table>
                     </q-card-section>
                 </q-card>
             </div>
@@ -19,12 +20,13 @@
             <div class="grid-item-current">
                 <q-card class="full-height">
                     <q-card-section class="card-title-section">
-                        <div class="text-subtitle1">Текущие данные</div>
+                        <div class="text-subtitle1 card-title-text">Текущие данные</div>
                     </q-card-section>
-                    <q-separator></q-separator>
+                    <!-- <q-separator></q-separator> -->
                     <q-card-section class="no-padding card-table-section">
-                        <q-table class="full-height" :columns="InitAndCurrentDataColumns" :rows="CurrentDataRows" hide-header dense
-                            :rows-per-page="[0]" v-model:pagination="initCurrentPagination" hide-bottom></q-table>
+                        <q-table square flat class="full-height page-table" :columns="InitAndCurrentDataColumns"
+                            :rows="CurrentDataRows" hide-header dense :rows-per-page="[0]"
+                            v-model:pagination="initCurrentPagination" hide-bottom separator="cell"></q-table>
                     </q-card-section>
                 </q-card>
             </div>
@@ -33,9 +35,13 @@
             <div class="grid-item-result">
                 <q-card class="full-height">
                     <q-card-section class="card-title-section">
-                        <div class="text-subtitle1">Результат</div>
+                        <div class="text-subtitle1 card-title-text">Календарь</div>
                     </q-card-section>
-                    <q-separator></q-separator>
+                    <q-card-section class="no-padding card-table-section">
+                        <q-table square flat class="full-height page-table" :columns="CalendarDataColumns"
+                            :rows="CalendarDataRows" dense :rows-per-page="[0]"
+                            v-model:pagination="initCurrentPagination" hide-bottom separator="cell"></q-table>
+                    </q-card-section>
                 </q-card>
             </div>
         </div>
@@ -60,6 +66,47 @@ type InitAndCurrentBaseRow<T extends string> = {
     type: 'text' | 'input',
     value: any,
 }
+
+const CalendarColumn = {
+    date: 'date',
+    day_of_week: 'day_of_week',
+    plan: 'plan',
+    fact: 'fact',
+} as const
+
+const CalendarDataColumns: QTableColumn[] = [
+    { field: CalendarColumn.date, name: CalendarColumn.date, label: 'Дата', align: 'left' },
+    { field: CalendarColumn.day_of_week, name: CalendarColumn.day_of_week, label: 'День', align: 'left' },
+    { field: CalendarColumn.plan, name: CalendarColumn.plan, label: 'План', align: 'left' },
+    { field: CalendarColumn.fact, name: CalendarColumn.fact, label: 'Факт', align: 'left' },
+] as const
+
+const CalendarDataRows = shallowRef([
+    {
+        date: '01.01.2025',
+        day_of_week: 'Пн',
+        plan: 1000,
+        fact: 1000,
+    },
+    {
+        date: '02.01.2025',
+        day_of_week: 'Вт',
+        plan: 1000,
+        fact: 1000,
+    },
+    {
+        date: '03.01.2025',
+        day_of_week: 'Ср',
+        plan: 1000,
+        fact: 1000,
+    },
+    {
+        date: '04.01.2025',
+        day_of_week: 'Чт',
+        plan: 1000,
+        fact: 1000,
+    },
+])
 
 const InitDataRows = shallowRef<InitAndCurrentBaseRow<InitDataFieldsMap>[]>([
     {
@@ -222,6 +269,33 @@ const CurrentDataRows = shallowRef<InitAndCurrentBaseRow<CurrentDataFieldsMap>[]
 }
 
 .card-title-section {
+    height: 50px;
+    padding: 0;
 
+    .card-title-text {
+        height: 100%;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding-left: 16px;
+
+
+    }
+
+}
+
+.card-table-section {
+
+    height: calc(100% - 50px);
+
+    .page-table {
+        border-top: 1px solid $table-border-color;
+        border-bottom-left-radius: $generic-border-radius;
+        border-bottom-right-radius: $generic-border-radius;
+
+        tr:last-child td {
+            border-bottom: 1px solid $table-border-color;
+        }
+    }
 }
 </style>
