@@ -1,86 +1,57 @@
 <template>
-    <q-page class="fit q-pa-md page-container">
-        <div class="adaptive-grid full-height">
-            <!-- Исходные данные -->
-            <div class="grid-item-source">
-                <q-card class="full-height">
-                    <q-card-section class="card-title-section">
-                        <div class="text-subtitle1 card-title-text">Исходные данные</div>
-                    </q-card-section>
-                    <!-- <q-separator></q-separator> -->
-                    <q-card-section class="no-padding card-table-section">
-                        <q-table square flat class="full-height page-table" :columns="InitAndCurrentDataColumns"
-                            :rows="InitDataRows" hide-header dense :rows-per-page="[0]"
-                            v-model:pagination="initCurrentPagination" hide-bottom separator="cell"></q-table>
-                    </q-card-section>
-                </q-card>
-            </div>
-
-            <!-- Текущие данные -->
-            <div class="grid-item-current">
-                <q-card class="full-height">
-                    <q-card-section class="card-title-section">
-                        <div class="text-subtitle1 card-title-text">Текущие данные</div>
-                    </q-card-section>
-                    <!-- <q-separator></q-separator> -->
-                    <q-card-section class="no-padding card-table-section">
-                        <q-table square flat class="full-height page-table" :columns="InitAndCurrentDataColumns"
-                            :rows="CurrentDataRows" hide-header dense :rows-per-page="[0]"
-                            v-model:pagination="initCurrentPagination" hide-bottom separator="cell"></q-table>
-                    </q-card-section>
-                </q-card>
-            </div>
-
-            <!-- Результат -->
-            <div class="grid-item-result">
-                <q-card class="full-height">
-                    <q-card-section class="card-title-section">
-                        <div class="text-subtitle1 card-title-text">Календарь</div>
-                    </q-card-section>
-                    <q-card-section class="no-padding card-table-section">
-                        <q-table square flat class="full-height page-table" :columns="CalendarDataColumns"
-                            :rows="CalendarDataRows" dense :rows-per-page="[0]"
-                            v-model:pagination="initCurrentPagination" hide-bottom separator="cell"></q-table>
-                    </q-card-section>
-                </q-card>
-            </div>
+    <div class="page-container">
+        <!-- Исходные данные -->
+        <div class="grid-item-source">
+            <q-card class="full-height">
+                <q-card-section class="card-title-section">
+                    <div class="text-subtitle1 card-title-text">Исходные данные</div>
+                </q-card-section>
+                <!-- <q-separator></q-separator> -->
+                <q-card-section class="no-padding card-table-section">
+                    <q-table square flat class="full-height page-table" :columns="InitAndCurrentDataColumns"
+                        :rows="InitDataRows" hide-header dense :rows-per-page="[0]"
+                        v-model:pagination="initCurrentPagination" hide-bottom separator="cell"></q-table>
+                </q-card-section>
+            </q-card>
         </div>
-    </q-page>
+
+        <!-- Текущие данные -->
+        <div class="grid-item-current">
+            <q-card class="full-height">
+                <q-card-section class="card-title-section">
+                    <div class="text-subtitle1 card-title-text">Текущие данные</div>
+                </q-card-section>
+                <!-- <q-separator></q-separator> -->
+                <q-card-section class="no-padding card-table-section">
+                    <q-table square flat class="full-height page-table" :columns="InitAndCurrentDataColumns"
+                        :rows="CurrentDataRows" hide-header dense :rows-per-page="[0]"
+                        v-model:pagination="initCurrentPagination" hide-bottom separator="cell"></q-table>
+                </q-card-section>
+            </q-card>
+        </div>
+
+        <!-- Результат -->
+        <div class="grid-item-result">
+            <q-card class="full-height">
+                <q-card-section class="card-title-section">
+                    <div class="text-subtitle1 card-title-text">Календарь</div>
+                </q-card-section>
+                <q-card-section class="no-padding card-table-section">
+                    <q-table square flat class="full-height page-table" :columns="CalendarDataColumns"
+                        :rows="CalendarDataRows" dense :rows-per-page="[0]" v-model:pagination="initCurrentPagination"
+                        hide-bottom separator="cell"></q-table>
+                </q-card-section>
+            </q-card>
+        </div>
+    </div>
 </template>
 
 <script setup lang="ts">
-import { QTableColumn } from 'quasar';
 import { CurrentDataFields, CurrentDataFieldsMap, InitDataFields, InitDataFieldsMap } from 'src/models/wallet';
+import { CalendarDataColumns, InitAndCurrentBaseRow, InitAndCurrentDataColumns } from './models';
 import { ref, shallowRef } from 'vue';
 
 const initCurrentPagination = ref({ rowsPerPage: 0 })
-
-const InitAndCurrentDataColumns: QTableColumn[] = [
-    { field: 'label', name: 'label', label: 'name', align: 'left' },
-    { field: 'value', name: 'value', label: 'value' },
-] as const
-
-type InitAndCurrentBaseRow<T extends string> = {
-    name: T,
-    label: string,
-    type: 'text' | 'input',
-    value: any,
-}
-
-const CalendarColumn = {
-    date: 'date',
-    day_of_week: 'day_of_week',
-    plan: 'plan',
-    fact: 'fact',
-} as const
-
-const CalendarDataColumns: QTableColumn[] = [
-    { field: CalendarColumn.date, name: CalendarColumn.date, label: 'Дата', align: 'left' },
-    { field: CalendarColumn.day_of_week, name: CalendarColumn.day_of_week, label: 'День', align: 'left' },
-    { field: CalendarColumn.plan, name: CalendarColumn.plan, label: 'План', align: 'left' },
-    { field: CalendarColumn.fact, name: CalendarColumn.fact, label: 'Факт', align: 'left' },
-] as const
-
 const CalendarDataRows = shallowRef([
     {
         date: '01.01.2025',
@@ -233,8 +204,8 @@ const CurrentDataRows = shallowRef<InitAndCurrentBaseRow<CurrentDataFieldsMap>[]
 
 </script>
 
-<style lang="scss">
-.adaptive-grid {
+<style lang="scss" scoped>
+.page-container {
     display: grid;
     gap: 16px;
 
@@ -265,36 +236,33 @@ const CurrentDataRows = shallowRef<InitAndCurrentBaseRow<CurrentDataFieldsMap>[]
         grid-template-areas:
             "result source"
             "result current";
-    }
-}
-
-.card-title-section {
-    height: 50px;
-    padding: 0;
-
-    .card-title-text {
-        height: 100%;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        padding-left: 16px;
-
 
     }
 
-}
+    .card-title-section {
+        height: 50px;
+        padding: 0;
 
-.card-table-section {
+        .card-title-text {
+            height: 100%;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            padding-left: 16px;
+        }
+    }
 
-    height: calc(100% - 50px);
+    .card-table-section {
+        height: calc(100% - 50px);
 
-    .page-table {
-        border-top: 1px solid $table-border-color;
-        border-bottom-left-radius: $generic-border-radius;
-        border-bottom-right-radius: $generic-border-radius;
+        .page-table {
+            border-top: 1px solid $table-border-color;
+            border-bottom-left-radius: $generic-border-radius;
+            border-bottom-right-radius: $generic-border-radius;
 
-        tr:last-child td {
-            border-bottom: 1px solid $table-border-color;
+            :deep(tr:last-child td) {
+                border-bottom: 1px solid $table-border-color;
+            }
         }
     }
 }

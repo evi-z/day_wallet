@@ -2,7 +2,7 @@
     <q-layout view="lHh Lpr lFf" class="fit">
         <q-header elevated>
             <q-toolbar class="toolbar">
-                <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
+                <!-- <q-btn flat dense round icon="menu" aria-label="Menu"/> -->
 
                 <q-toolbar-title>
                     Day Wallet
@@ -28,6 +28,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+
 
 </script>
 
