@@ -1,4 +1,4 @@
-import { date } from "quasar"
+import { date, DateOptions } from "quasar"
 
 export const FRIENDLY_DATE_FORMAT = 'DD.MM.YYYY'
 export const FRIENDLY_DATE_TIME_FORMAT = 'DD.MM.YYYY, HH:mm:ss'
@@ -21,11 +21,13 @@ export function useDateUtils() {
 }
 
 export class AppDate {
-    date: Date | undefined
+    date: Date
     private _iso: string | undefined
     private _friendly: string | undefined
+    private _dayOfWeek: number | undefined
+    private _dayOfWeekString: string | undefined
 
-    private constructor(date: Date | undefined, cache?: { iso?: string, friendly?: string }) {
+    private constructor(date: Date, cache?: { iso?: string, friendly?: string }) {
         this.date = date
         this._iso = cache?.iso
         this._friendly = cache?.friendly
@@ -53,5 +55,29 @@ export class AppDate {
         return this._friendly || (
             this._friendly = date.formatDate(this.date, FRIENDLY_DATE_FORMAT)
         )
+    }
+
+    add(options: DateOptions): AppDate {
+        /** 
+         * Добавляет опции к дате, возвращает новую дату 
+         * https://quasar.dev/quasar-utils/date-utils#add-subtract
+         * */
+        return AppDate.fromDate(date.addToDate(this.date, options))
+    }
+
+    get dayOfWeek() {
+        return this._dayOfWeek || (
+            this._dayOfWeek = date.getDayOfWeek(this.date)
+        )
+    }
+
+    get dayOfWeekString() {
+        return this._dayOfWeekString || (
+            this._dayOfWeekString = date.formatDate(this.date, 'ddd')
+        )
+    }
+
+    isWeekend() {
+        return this.dayOfWeek === 6 || this.dayOfWeek === 7
     }
 }

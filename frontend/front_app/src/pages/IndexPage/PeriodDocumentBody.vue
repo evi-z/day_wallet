@@ -34,12 +34,35 @@
         <div class="grid-item-result">
             <q-card class="full-height">
                 <q-card-section class="card-title-section">
-                    <div class="text-subtitle1 card-title-text">Календарь</div>
+                    <div class="text-subtitle1 card-title-text">
+                        <span>Календарь</span>
+                        <q-space />
+                        <div class="row items-center q-gutter-x-sm q-pr-sm">
+                            <q-btn icon="calendar_month" flat round @click="handleEdit" />
+                        </div>
+                    </div>
                 </q-card-section>
                 <q-card-section class="no-padding card-table-section">
                     <q-table square flat class="full-height page-table" :columns="CalendarDataColumns"
-                        :rows="CalendarDataRows" dense :rows-per-page="[0]" v-model:pagination="initCurrentPagination"
-                        hide-bottom separator="cell"></q-table>
+                        :rows="calendarDataRows" dense :rows-per-page="[0]" v-model:pagination="initCurrentPagination"
+                        hide-bottom separator="cell">
+                        <template #body="props">
+                            <q-tr :props="props" :class="{ 'bg-red-2': props.row.date.isWeekend() }">
+                                <q-td>
+                                    {{ props.row.date.friendly }}
+                                </q-td>
+                                <q-td>
+                                    {{ props.row.day_of_week }}
+                                </q-td>
+                                <q-td>
+                                    {{ props.row.plan }}
+                                </q-td>
+                                <q-td>
+                                    {{ props.row.fact }}
+                                </q-td>
+                            </q-tr>
+                        </template>
+                    </q-table>
                 </q-card-section>
             </q-card>
         </div>
@@ -49,35 +72,47 @@
 <script setup lang="ts">
 import { CurrentDataFields, CurrentDataFieldsMap, InitDataFields, InitDataFieldsMap } from 'src/models/wallet';
 import { CalendarDataColumns, InitAndCurrentBaseRow, InitAndCurrentDataColumns } from './models';
-import { ref, shallowRef } from 'vue';
+import { onMounted, ref, shallowRef, toRefs } from 'vue';
+import { PeriodDocumentDBData } from 'src/models/database';
+import { AppDate } from 'src/utils/date';
 
 const initCurrentPagination = ref({ rowsPerPage: 0 })
-const CalendarDataRows = shallowRef([
-    {
-        date: '01.01.2025',
-        day_of_week: 'Пн',
+
+interface Props {
+    document: PeriodDocumentDBData
+}
+
+const props = defineProps<Props>()
+
+const { document } = props
+
+
+const getDaysInPeriod = (): AppDate[] => {
+    const [aFromDate, aToDate] = [
+        AppDate.fromFriendlyFormat(document.data.from_date),
+        AppDate.fromFriendlyFormat(document.data.to_date)
+    ]
+    console.log(aFromDate, aToDate)
+
+    const days: AppDate[] = []
+    for (let aDate = aFromDate; aDate.date <= aToDate.date; aDate = aDate.add({ days: 1 })) {
+        days.push(aDate)
+    }
+    return days
+}
+
+
+onMounted(async () => {
+    const days = getDaysInPeriod()
+    calendarDataRows.value = days.map(date => ({
+        date: date,
+        day_of_week: date.dayOfWeekString,
         plan: 1000,
         fact: 1000,
-    },
-    {
-        date: '02.01.2025',
-        day_of_week: 'Вт',
-        plan: 1000,
-        fact: 1000,
-    },
-    {
-        date: '03.01.2025',
-        day_of_week: 'Ср',
-        plan: 1000,
-        fact: 1000,
-    },
-    {
-        date: '04.01.2025',
-        day_of_week: 'Чт',
-        plan: 1000,
-        fact: 1000,
-    },
-])
+    }))
+})
+
+const calendarDataRows = shallowRef([])
 
 const InitDataRows = shallowRef<InitAndCurrentBaseRow<InitDataFieldsMap>[]>([
     {

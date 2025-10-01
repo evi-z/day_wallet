@@ -1,11 +1,13 @@
 <template>
     <div class="page-container column flex-center">
-        <q-form class="q-gutter-y-md column">
-            <q-input v-model="form.name" outlined label="Название периода" autofocus></q-input>
+
+        <div class="q-gutter-y-md column">
+            <q-input v-model="form.name" outlined label="Название периода" autofocus :maxlength="22"></q-input>
             <q-separator />
             <PeriodCalendar v-model="form.period"></PeriodCalendar>
-            <q-btn type="submit" color="primary" label="Создать" @click="handleCreate" :disabled="!state.createEnabled" />
-        </q-form>
+            <q-btn color="primary" label="Создать" @click="handleCreate" :disabled="!state.createEnabled"
+                :loading="state.createLoading" />
+        </div>
     </div>
 </template>
 
@@ -18,7 +20,7 @@ import app from 'src/services/app';
 
 const state = reactive({
     createEnabled: false,
-    loading: false,
+    createLoading: false,
 })
 
 type NewPeriodDocumentForm = {
@@ -46,11 +48,13 @@ const handleCreate = async () => {
         to_date: form.value.period.to,
     }
 
-    state.loading = true
-
+    state.createLoading = true
     await app.userDb!.createPeriodDocument(formData).then(doc => {
-        console.log('🔍 Doc:', doc)
-        // emit('created', doc._id)
+        if (!doc.ok) throw new Error('❌ Error create period document (not ok response):\n' + String(doc))
+
+        emit('created', doc.id)
+    }).finally(() => {
+        state.createLoading = false
     })
 }
 

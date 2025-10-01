@@ -1,6 +1,4 @@
-import { PeriodDocumentFormData } from "./wallet"
-
-export type DatabaseDocumentBaseData<T extends string = string, D extends object = object> = PouchDB.Core.PutDocument<{
+export type DatabaseDocumentBaseData<T extends string = string, D extends object = object> = PouchDB.Core.ExistingDocument<{
     /** Базовые данные для всех документов */
 
     type: T,
