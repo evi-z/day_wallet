@@ -3,50 +3,55 @@
         <q-form class="q-gutter-y-md column">
             <q-input v-model="form.name" outlined label="Название периода" autofocus></q-input>
             <q-separator />
-
-
-            <q-date class="calendar" v-model="form.period" subtitle="Период" range @range-start="handleRangeStart"
-                @range-end="handleRangeEnd" :title="calendarTitle"></q-date>
-            <q-btn type="submit" color="primary" label="Создать" />
+            <PeriodCalendar v-model="form.period"></PeriodCalendar>
+            <q-btn type="submit" color="primary" label="Создать" @click="handleCreate" :disabled="!state.createEnabled" />
         </q-form>
     </div>
 </template>
 
 <script setup lang="ts">
-import { date, QDateProps } from 'quasar';
-import { computed, ref, watchEffect } from 'vue';
+import { PeriodDocumentFormData } from 'src/models/database';
+import { reactive, ref, watchEffect } from 'vue';
+import PeriodCalendar from 'src/components/PeriodCalendar/index.vue';
+import { PeriodCalendarModel } from 'src/components/PeriodCalendar/models';
+import app from 'src/services/app';
 
-
-type PeriodRange = {
-    from: string,
-    to: string,
-}
-
-type NewWalletCallendarForm = {
-    name: string,
-    period: PeriodRange,
-}
-
-const form = ref<NewWalletCallendarForm>({
-    name: '',
-    period: { from: '', to: '' } as PeriodRange,
+const state = reactive({
+    createEnabled: false,
+    loading: false,
 })
 
-const calendarTitle = ref('Выберите период')
-
-type onRangeDateArg = Parameters<NonNullable<QDateProps['onRangeStart']>>[0]
-
-const foratOnRangeDate = (dt: onRangeDateArg): string => {
-    return date.formatDate(date.buildDate(dt), 'DD.MM.YYYY')
+type NewPeriodDocumentForm = {
+    name: string,
+    period: PeriodCalendarModel,
 }
 
-const handleRangeStart = (fromDate: onRangeDateArg) => {
-    calendarTitle.value = `${foratOnRangeDate(fromDate)} -`
-}
+const form = ref<NewPeriodDocumentForm>({
+    name: '',
+    period: { from: '', to: '' } as PeriodCalendarModel,
+})
 
-const handleRangeEnd = (period: Parameters<NonNullable<QDateProps['onRangeEnd']>>[0]) => {
-    calendarTitle.value = `${foratOnRangeDate(period.from)} - ${foratOnRangeDate(period.to)}`
-    // form.value.period.to = date
+const emit = defineEmits<{
+    created: [key: string]
+}>()
+
+watchEffect(() => {
+    state.createEnabled = !!(form.value.name && form.value.period.from && form.value.period.to)
+})
+
+const handleCreate = async () => {
+    const formData: PeriodDocumentFormData = {
+        name: form.value.name,
+        from_date: form.value.period.from,
+        to_date: form.value.period.to,
+    }
+
+    state.loading = true
+
+    await app.userDb!.createPeriodDocument(formData).then(doc => {
+        console.log('🔍 Doc:', doc)
+        // emit('created', doc._id)
+    })
 }
 
 </script>
