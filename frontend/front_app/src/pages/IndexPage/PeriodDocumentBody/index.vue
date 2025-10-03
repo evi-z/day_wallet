@@ -170,7 +170,10 @@ const useDocumentRefs = (
     }
 ) => {
     const calendarRows = getPeriodDocumentCalendarDataRows(document)  // Строки календаря
-    const calendarValuesRef = shallowRef<PeriodDocCalendarRowValues>()  // Значения календаря
+    calendarRows.forEach(row => {  // Заполняем пустые значения для строк (если не переданы)
+        if (!(row.date_friendly in calendarValues)) calendarValues[row.date_friendly] = 0
+    })
+    const calendarValuesRef = shallowRef<PeriodDocCalendarRowValues>(calendarValues)  // Значения календаря
 
     const initValuesRef = shallowRef<PeriodDocInitRowValues>(function (): PeriodDocInitRowValues {
         const weekendDays = calendarRows.filter(row => row._date.isWeekend()).length
