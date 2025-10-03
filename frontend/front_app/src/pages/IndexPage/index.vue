@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
 import InitBody from './InitBody.vue';
-import PeriodDocumentBody from './PeriodDocumentBody.vue';
+import PeriodDocumentBody from './PeriodDocumentBody/index.vue';
 import { onMounted, reactive, ref } from 'vue';
 import InnerLoading from 'src/components/InnerLoading/index.vue';
 import app from 'src/services/app';

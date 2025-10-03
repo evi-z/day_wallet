@@ -20,7 +20,7 @@ import {
     uid,
 } from 'quasar';
 
-import { ref, computed, toRefs, watch, h, getCurrentInstance, onMounted, onBeforeUnmount, nextTick, Teleport, RendererNode } from 'vue';
+import { ref, computed, toRefs, watch, h, getCurrentInstance, onMounted, onBeforeUnmount, nextTick, Teleport } from 'vue';
 
 interface Props {
     showing: boolean,

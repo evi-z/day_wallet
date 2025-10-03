@@ -1,4 +1,4 @@
-export const InitDataFields = {
+export const PeriodDocInitDataFields = {
     total_budget: 'total_budget',  // Общий бюджет на период
     weekend_plan: 'weekend_plan',  // План на выходные
     total_days: 'total_days',  // Общее количество дней
@@ -9,9 +9,9 @@ export const InitDataFields = {
     initial_plan: 'initial_plan'  // Начальный план
 } as const
 
-export type InitDataFieldsMap = typeof InitDataFields[keyof typeof InitDataFields]
+export type PeriodDocInitDataFieldsMap = typeof PeriodDocInitDataFields[keyof typeof PeriodDocInitDataFields]
 
-export const CurrentDataFields = {
+export const PeriodDocCurrentDataFields = {
     current_date: 'current_date',  // Текущая дата
     days_remaining: 'days_remaining',  // Количество оставшихся дней
     weekends_remaining: 'weekends_remaining',  // Количество оставшихся выходных дней
@@ -25,4 +25,4 @@ export const CurrentDataFields = {
     plan_for_today: 'plan_for_today'  // План на сегодня
 } as const
 
-export type CurrentDataFieldsMap = typeof CurrentDataFields[keyof typeof CurrentDataFields]
+export type PeriodDocCurrentDataFieldsMap = typeof PeriodDocCurrentDataFields[keyof typeof PeriodDocCurrentDataFields]

@@ -33,6 +33,10 @@ export class AppDate {
         this._friendly = cache?.friendly
     }
 
+    static today() {
+        return new this(new Date())
+    }
+
     static fromDate(d: Date) {  // Date -> AppDate
         return new this(d)
     }
@@ -58,8 +62,8 @@ export class AppDate {
     }
 
     add(options: DateOptions): AppDate {
-        /** 
-         * Добавляет опции к дате, возвращает новую дату 
+        /**
+         * Добавляет опции к дате, возвращает новую дату
          * https://quasar.dev/quasar-utils/date-utils#add-subtract
          * */
         return AppDate.fromDate(date.addToDate(this.date, options))

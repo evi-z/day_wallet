@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Run Frontend",
+        "type": "shell",
+        "command": "pnpm run dev",
+        "group": "build",
+        "problemMatcher": [],
+        "options": {
+          "cwd": "${workspaceFolder}/frontend/front_app",
+          "statusbar": {
+            "label": "$(globe) Run Frontend"
+          }
+        }
+      },
+
+    ]
+  }
