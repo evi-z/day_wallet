@@ -10,10 +10,10 @@ export class AppDatabaseService extends BaseDatabaseService {
 
     constructor() { super(DATABASE_NAME) }
 
-    async getUserData(): Promise<AppUser | null> {
+    async getUserData() {
         /** Получает данные авторизованного пользователя */
 
-        return this.getOrNull(USER_DATA_KEY)
+        return this.getByIdOrNull<AppUser>(USER_DATA_KEY)
     }
 
     async putUserData(userData: AppUser) {

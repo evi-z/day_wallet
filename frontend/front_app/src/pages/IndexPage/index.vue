@@ -3,7 +3,7 @@
         <InnerLoading :showing="state.loading" label="Загрузка..." />
         <q-toolbar class="page-toolbar bg-grey-4 no-padding" v-if="!state.loading">
             <q-tabs dense class="tabs-toolbar" v-model="state.currentTab" no-caps>
-                <q-tab v-for="tab in documentTabs" :key="tab._id" :name="tab._id" :label="tab.data.name">
+                <q-tab v-for="tab in documentTabs" :key="tab._id" :name="tab._id" :label="tab.name">
                     <q-menu touch-position context-menu>
                         <q-list dense>
                             <q-item clickable v-close-popup @click="handleDelete(tab._id!)">

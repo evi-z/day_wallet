@@ -5,8 +5,8 @@ import { PeriodDocCalendarRow } from "./models"
 /** Возвращает массив дат (AppDate) в периоде документа */
 export const getDaysInPeriodDocument = (document: PeriodDocumentDBData): AppDate[] => {
     const [aFromDate, aToDate] = [
-        AppDate.fromFriendlyFormat(document.data.from_date),
-        AppDate.fromFriendlyFormat(document.data.to_date)
+        AppDate.fromFriendlyFormat(document.from_date),
+        AppDate.fromFriendlyFormat(document.to_date)
     ]
 
     const days: AppDate[] = []
@@ -19,10 +19,7 @@ export const getDaysInPeriodDocument = (document: PeriodDocumentDBData): AppDate
 export const getPeriodDocumentCalendarDataRows = (document: PeriodDocumentDBData): PeriodDocCalendarRow[] => {
     const days = getDaysInPeriodDocument(document)
     return days.map(date => ({
-        _date: date,
-        date_friendly: date.friendly,
-        day_of_week: date.dayOfWeekString,
-        plan: 1000,
-        fact: 1000,
+        date: date,
+        plan: 0,
     } as PeriodDocCalendarRow))
 }

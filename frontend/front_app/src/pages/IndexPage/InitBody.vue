@@ -52,6 +52,10 @@ const handleCreate = async () => {
     await app.userDb!.createPeriodDocument(formData).then(doc => {
         if (!doc.ok) throw new Error('❌ Error create period document (not ok response):\n' + String(doc))
 
+        // app.userDb!.getByIdOrNull(doc.id).then(doc => {
+        //     console.log('🔍 Period document:', doc)
+        // })
+
         emit('created', doc.id)
     }).finally(() => {
         state.createLoading = false

@@ -27,16 +27,6 @@
                                         v-model="initDataValues[props.row.name as keyof PeriodDocInitRowValues]" />
                                 </template>
 
-                                <!-- <q-td key="value" :props="props"
-                                    :class="{ 'no-padding': props.row.type === PeriodDocInitAndCurrentCellType.input }">
-                                    <template v-if="props.row.type === PeriodDocInitAndCurrentCellType.text">
-                                        {{ initDataValues[props.row.name as keyof PeriodDocInitRowValues] }}
-                                    </template>
-                                    <template v-else-if="props.row.type === PeriodDocInitAndCurrentCellType.input">
-                                        <q-input borderless input-class="text-right q-px-md q-py-none" input-style="font-size: 13px;" dense
-                                            v-model="initDataValues[props.row.name as keyof PeriodDocInitRowValues]" />
-                                    </template>
-                                </q-td> -->
                             </q-tr>
 
                         </template>
@@ -61,15 +51,15 @@
                                 <q-td key="label" :props="props">
                                     {{ props.row.label }}
                                 </q-td>
-                                <q-td key="value" :props="props">
-                                    <template v-if="props.row.type === PeriodDocInitAndCurrentCellType.text">
+                                <template v-if="props.row.type === PeriodDocInitAndCurrentCellType.text">
+                                    <q-td key="value" :props="props">
                                         {{ currentDataValues[props.row.name as keyof PeriodDocCurrentRowValues] }}
-                                    </template>
-                                    <template v-else-if="props.row.type === PeriodDocInitAndCurrentCellType.input">
-                                        <q-input
-                                            v-model="currentDataValues[props.row.name as keyof PeriodDocCurrentRowValues]" />
-                                    </template>
-                                </q-td>
+                                    </q-td>
+                                </template>
+                                <template v-else-if="props.row.type === PeriodDocInitAndCurrentCellType.input">
+                                    <TableInputCell td-key="value" :td-props="props"
+                                        v-model="currentDataValues[props.row.name as keyof PeriodDocCurrentRowValues]" />
+                                </template>
                             </q-tr>
                         </template>
                     </q-table>
@@ -91,22 +81,24 @@
                 </q-card-section>
                 <q-card-section class="no-padding card-table-section">
                     <q-table square flat class="full-height page-table" :columns="PeriodDocCalendarDataColumns"
-                        :row-key="PeriodDocCalendarColumn.date_friendly" :rows="calendarDataRows" dense :rows-per-page="[0]"
+                        :row-key="PeriodDocCalendarColumn.date_friendly" :rows="calendarRows" dense :rows-per-page="[0]"
                         v-model:pagination="initCurrentPagination" hide-bottom separator="cell">
                         <template #body="props">
-                            <q-tr :props="props" :class="{ 'bg-red-2': props.row.date.isWeekend() }">
+                            <q-tr :props="props"
+                                :class="{ 'bg-red-2': props.row.date.isWeekend(), 'bg-green-2': props.row.date.isToday() }">
                                 <q-td :key="PeriodDocCalendarColumn.date_friendly" :props="props">
-                                    {{ props.row.date_friendly }}
+                                    {{ props.row.date.friendly }}
                                 </q-td>
                                 <q-td :key="PeriodDocCalendarColumn.day_of_week" :props="props">
-                                    {{ props.row.day_of_week }}
+                                    {{ props.row.date.dayOfWeekString }}
                                 </q-td>
                                 <q-td :key="PeriodDocCalendarColumn.plan" :props="props">
                                     {{ props.row.plan }}
                                 </q-td>
-                                <q-td :key="PeriodDocCalendarColumn.fact" :props="props">
-                                    {{ props.row.fact }}
-                                </q-td>
+
+                                <TableInputCell :td-key="PeriodDocCalendarColumn.fact" :td-props="props"
+                                    v-model="calendarDataValues[props.row.date.friendly]" />
+
                             </q-tr>
                         </template>
                     </q-table>
@@ -123,13 +115,15 @@ import {
     PeriodDocInitRowValues,
     PeriodDocCurrentRowValues,
     PeriodDocCalendarRow,
-    PeriodDocCalendarRowValues
+    PeriodDocCalendarRowValues,
+    DefaultPeriodDocumentMainValues,
 } from './models';
-import { customRef, onMounted, ref, shallowRef, toRefs, watchEffect } from 'vue';
-import { PeriodDocumentDBData } from 'src/models/database';
+import { EffectScope, effectScope, onMounted, ref, shallowRef, triggerRef, watch, watchEffect, computed, nextTick } from 'vue';
+import { PeriodDocumentDBData, PeriodDocumentMainValuesDBData } from 'src/models/database';
 import { AppDate } from 'src/utils/date';
 import TableInputCell from './TableInputCell.vue';
-import { getDaysInPeriodDocument, getPeriodDocumentCalendarDataRows } from './funs';
+import { getPeriodDocumentCalendarDataRows } from './funs';
+import app from 'src/services/app';
 
 const initCurrentPagination = ref({ rowsPerPage: 0 })
 
@@ -140,96 +134,177 @@ interface Props {
 const props = defineProps<Props>()
 
 const { document } = props
+const aFromDate = computed(() => AppDate.fromFriendlyFormat(document.from_date))
+const aToDate = computed(() => AppDate.fromFriendlyFormat(document.to_date))
 
+const calendarRows = shallowRef<PeriodDocCalendarRow[]>([])
+const currentDate = ref<AppDate>()
 
+const documentMainValues = ref<PeriodDocumentMainValuesDBData>({} as PeriodDocumentMainValuesDBData)
+const initDataValues = ref<PeriodDocInitRowValues>({} as PeriodDocInitRowValues)
+const currentDataValues = ref<PeriodDocCurrentRowValues>({} as PeriodDocCurrentRowValues)
+const calendarDataValues = ref<PeriodDocCalendarRowValues>({} as PeriodDocCalendarRowValues)
 
-const calendarDataRows = shallowRef<PeriodDocCalendarRow[]>([])
-const today = ref<AppDate | null>(null)
+// const initDataMainValuesWatcher = watch(() => [
+//     initDataValues.value.total_budget, initDataValues.value.weekend_plan
+// ], ([totalBudget, weekendPlan]) => {
+//     recalcInitDataValues(false)
+// })
 
 onMounted(async () => {
-    today.value = AppDate.today()
-    initDocumentValues()
+
+    initDocument()
 })
 
-type InitValuesDef = Pick<PeriodDocInitRowValues, 'total_budget' | 'weekend_plan'>
-const InitValuesDef: InitValuesDef = {
-    total_budget: 40000,
-    weekend_plan: 2000,
+const getDocumentMainValues = async () => {
+    let mainValues = await app.userDb!.fetchPeriodDocumentMainValues(document._id)
+    if (!mainValues) {  // Если нет основных значений, то создаём их
+        await app.userDb!.setPeriodDocumentMainValues(document._id, DefaultPeriodDocumentMainValues).then(async res => {
+            mainValues = await app.userDb!.getByIdOrNull<PeriodDocumentMainValuesDBData>(res.id)
+        })
+    }
+    return mainValues!
 }
 
-const initDataValues = ref<PeriodDocInitRowValues>({})
-const currentDataValues = ref<PeriodDocCurrentRowValues>({})
+/** Инициализация данных документа */
+const initDocument = async () => {
+    documentMainValues.value = await getDocumentMainValues()
+    currentDate.value = AppDate.today()
+    await nextTick()
 
+    initDocumentValues()
+}
 
-const useDocumentRefs = (
-    { document, currentDate, initValues, calendarValues }: {
-        document: PeriodDocumentDBData,
-        currentDate: AppDate,
-        initValues: InitValuesDef,
-        calendarValues: PeriodDocCalendarRowValues,
+const recalcCalendarPlans = () => {
+    /** Счётчик оставшихся дней относительно индекса переданнной даты */
+    function countRemainingDays(index: number, isWeekend: boolean) {
+        return calendarRows.value.slice(index).filter(day => day.date.isWeekend() === isWeekend).length;
     }
-) => {
-    const calendarRows = getPeriodDocumentCalendarDataRows(document)  // Строки календаря
-    calendarRows.forEach(row => {  // Заполняем пустые значения для строк (если не переданы)
-        if (!(row.date_friendly in calendarValues)) calendarValues[row.date_friendly] = 0
-    })
-    const calendarValuesRef = shallowRef<PeriodDocCalendarRowValues>(calendarValues)  // Значения календаря
 
-    const initValuesRef = shallowRef<PeriodDocInitRowValues>(function (): PeriodDocInitRowValues {
-        const weekendDays = calendarRows.filter(row => row._date.isWeekend()).length
-        const weekdayDays = calendarRows.filter(row => !row._date.isWeekend()).length
-        const totalWeekendsBudget = weekendDays * initValues.weekend_plan
-        const totalWeekdaysBudget = initValues.total_budget - totalWeekendsBudget
+    /** Считает сумму фактов до переданного индекса даты */
+    function sumFact(upToIndex: number) {
+        return calendarRows.value.slice(0, upToIndex).reduce((acc, row) => acc + calendarDataValues.value[row.date.friendly]!, 0);
+    }
+
+    /** Заполенение плана до текущей даты */
+    calendarRows.value[0]!.plan = initDataValues.value.initial_plan
+    // calendarValues[calendarRows.value[0]!.date.friendly] = 1000
+    let lastCalcPlan = initDataValues.value.initial_plan  // Последний рассчитанный план
+    for (let i = 1; i < calendarRows.value.length; i++) {
+        const row = calendarRows.value[i]!
+
+        // Будни после текущей даты - план последнего рассчитанного дня
+        if (row.date.isAfter(currentDate.value!)) {
+            row.plan = lastCalcPlan
+            continue
+        }
+
+        const remainingWeekends = countRemainingDays(i, true)  // Осталось выходных дней
+        const remainingWeekdays = countRemainingDays(i, false)  // Осталось будних дней
+        const spentSoFar = sumFact(i)  // Потрачено до текущей даты
+
+        // Рассчитываем план на сегодня
+        lastCalcPlan = remainingWeekends > 0 ? Math.round(
+            // (Изначальный план - потрачено всего до сегодня - план на оставшиеся выходные) / оставшиеся будни
+            (initDataValues.value.total_budget - spentSoFar - (remainingWeekends * initDataValues.value.weekend_plan)) / remainingWeekdays
+        ) : 0
+
+        // Проставляем план (если выходной - план выходного дня)
+        row.plan = row.date.isWeekend() ? initDataValues.value.weekend_plan : lastCalcPlan
+    }
+
+    /** Индекс текущей даты */
+    const currentDayIndex = calendarRows.value.findIndex(row => row.date.iso === currentDate.value!.iso)
+    if (currentDayIndex === -1) {
+        // TODO: Что делать в таком случае? 
+        // Такого быть не должно
+        throw new Error('Current date not found in calendar rows')
+    }
+
+    /** Текущие данные */
+    const currentValues = function (): PeriodDocCurrentRowValues {
+        const daysRemaining = aToDate.value.diff(currentDate.value!) + 1 // Осталось дней (включая текущий день)
+        const weekendsRemaining = countRemainingDays(currentDayIndex, true)  // Осталось выходных дней
+        const weekdaysRemaining = daysRemaining - weekendsRemaining // Осталось будних дней
+
+        const totalSpent = sumFact(currentDayIndex)  // Всего потрачено
+        const spentOnWeekends = calendarRows.value.filter(  // Потрачено в выходные
+            row => row.date.isWeekend()).reduce((acc, row) => acc + calendarDataValues.value[row.date.friendly]!, 0
+            )
+        const spentOnWeekdays = totalSpent - spentOnWeekends  // Потрачено в будние
+
+        const totalRemaining = initDataValues.value.total_budget - totalSpent  // Обший остаток
+        const remainingForWeekends = (  // Отсалось на выходные (не больше общего остатка)
+            weekendsRemaining * initDataValues.value.weekend_plan
+        ) > totalRemaining ? totalRemaining : (weekendsRemaining * initDataValues.value.weekend_plan)
+        const remainingForWeekdays = totalRemaining - remainingForWeekends  // Отсалось на будни
 
         return {
-            ...initValues,
-            total_days: calendarRows.length,
+            current_date: currentDate.value!.friendly,
+            days_remaining: daysRemaining,
+            weekends_remaining: weekendsRemaining,
+            weekdays_remaining: weekdaysRemaining,
+            total_spent_actual: totalSpent,
+            spent_on_weekends: spentOnWeekends,
+            spent_on_weekdays: spentOnWeekdays,
+            total_remaining: totalRemaining,
+            remaining_for_weekends: remainingForWeekends,
+            remaining_for_weekdays: remainingForWeekdays,
+            plan_for_today: lastCalcPlan,
+        }
+    }()
+}
+
+/** Пересчёт исходных данных */
+const recalcInitDataValues = async(recalcDays: boolean = true) => {
+
+    console.log('recalcInitDataValues', initDataValues.value)
+    initDataValues.value = function (): PeriodDocInitRowValues {
+        const totalDays = recalcDays ? calendarRows.value.length : initDataValues.value.total_days
+        const weekendDays = recalcDays ? calendarRows.value.filter(row => row.date.isWeekend()).length : initDataValues.value.weekend_days
+        const weekdayDays = recalcDays ? calendarRows.value.filter(row => !row.date.isWeekend()).length : initDataValues.value.weekday_days
+        const totalWeekendsBudget = weekendDays * documentMainValues.value.init_values.weekend_plan
+        const totalWeekdaysBudget = documentMainValues.value.init_values.total_budget - totalWeekendsBudget
+
+        return {
+            ...documentMainValues.value.init_values,
+            total_days: totalDays,
             weekend_days: weekendDays,
             weekday_days: weekdayDays,
             total_weekends_budget: totalWeekendsBudget,
             total_weekdays_budget: totalWeekdaysBudget,
             initial_plan: Math.round(totalWeekdaysBudget / weekdayDays),
         }
-    }())
-    const currentValuesRef = shallowRef<PeriodDocCurrentRowValues>(function (): PeriodDocCurrentRowValues {
-        return {
-            current_date: currentDate.friendly,
-            days_remaining: calendarRows.length,
-            weekends_remaining: calendarRows.filter(row => row._date.isWeekend()).length,
-            weekdays_remaining: calendarRows.filter(row => !row._date.isWeekend()).length,
-        }
-    }())
-
-
-    watchEffect(() => {
-        console.log(currentDate, initValuesRef.value)
-    })
-
-    return {
-        initValuesRef,
-        currentValuesRef,
-        calendarValuesRef
-    }
+    }()
 }
 
 const initDocumentValues = () => {
-    const { initValuesRef, currentValuesRef, calendarValuesRef } = useDocumentRefs({
-        document: document,
-        currentDate: today.value,
-        initValues: InitValuesDef,
+    // if (!documentWatchersScope) documentWatchersScope = effectScope()
+    // documentWatchersScope.pause()
+    // console.log('documentWatchersScope', documentWatchersScope)
+    // if (documentWatchersScope.active) documentWatchersScope.stop()
+
+
+    // Если текущая дата выходит из диапазона, то устанавливаем крайние даты как текущую
+    if (currentDate.value!.isAfter(aToDate.value)) currentDate.value = aToDate.value
+    if (currentDate.value!.isBefore(aFromDate.value)) currentDate.value = aFromDate.value
+
+    // Строки календаря
+    calendarRows.value = getPeriodDocumentCalendarDataRows(document)
+    calendarRows.value.forEach(row => {  // Инициализируем пустыми значениями (если не заданы)
+        if (!Number.isInteger(calendarDataValues.value[row.date.friendly])) calendarDataValues.value[row.date.friendly] = 0
     })
 
-    initDataValues.value = initValuesRef.value
-    currentDataValues.value = currentValuesRef.value
-    calendarDataRows.value = calendarValuesRef.value
+    /** Исходные данные */
+
+    recalcInitDataValues(true)
+    recalcCalendarPlans()
 }
 
 
 const handleEdit = () => {
     console.log('handleEdit')
 }
-
-
 
 
 

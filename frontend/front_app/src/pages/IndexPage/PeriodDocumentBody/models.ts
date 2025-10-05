@@ -1,12 +1,14 @@
 import { QTableColumn } from "quasar"
+import { PeriodDocumentMainValuesData } from "src/models/database"
 import { PeriodDocCurrentDataFields, PeriodDocCurrentDataFieldsMap, PeriodDocInitDataFields, PeriodDocInitDataFieldsMap } from "src/models/period_doc"
 import { AppDate } from "src/utils/date"
 
+const inputColumnStyle = 'width: 20%; min-width: 120px; max-width: 400px;'
 
 /** Столбцы таблицы "Исходные данные" и "Текущие данные" */
 export const PeriodDocInitAndCurrentDataColumns: QTableColumn[] = [
     { field: 'label', name: 'label', label: 'name', align: 'left' },
-    { field: 'value', name: 'value', label: 'value', style: 'width: 20%; min-width: 120px; max-width: 400px;' },
+    { field: 'value', name: 'value', label: 'value', style: inputColumnStyle },
 ] as const
 
 
@@ -23,7 +25,7 @@ export const PeriodDocCalendarDataColumns: QTableColumn[] = [
     { field: PeriodDocCalendarColumn.date_friendly, name: PeriodDocCalendarColumn.date_friendly, label: 'Дата', align: 'left' },
     { field: PeriodDocCalendarColumn.day_of_week, name: PeriodDocCalendarColumn.day_of_week, label: 'День', align: 'left' },
     { field: PeriodDocCalendarColumn.plan, name: PeriodDocCalendarColumn.plan, label: 'План', align: 'left' },
-    { field: PeriodDocCalendarColumn.fact, name: PeriodDocCalendarColumn.fact, label: 'Факт', align: 'left' },
+    { field: PeriodDocCalendarColumn.fact, name: PeriodDocCalendarColumn.fact, label: 'Факт', align: 'left', style: inputColumnStyle },
 ] as const
 
 export const PeriodDocInitAndCurrentCellType = {
@@ -149,11 +151,15 @@ export const PeriodDocCurrentDataRows: PeriodDocInitAndCurrentBaseRow<PeriodDocC
 export type PeriodDocInitRowValues = Record<PeriodDocInitDataFieldsMap, number>
 export type PeriodDocCurrentRowValues = Record<PeriodDocCurrentDataFieldsMap, number | string>
 export type PeriodDocCalendarRow = {
-    _date: AppDate,
-    date_friendly: string,
-    day_of_week: string,
+    date: AppDate,
     plan: number,
-    fact: number,
 }
 
 export type PeriodDocCalendarRowValues = Record<string, number>
+
+export const DefaultPeriodDocumentMainValues: PeriodDocumentMainValuesData = {
+    init_values: {
+        total_budget: 0,
+        weekend_plan: 0,
+    },
+} as const

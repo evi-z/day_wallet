@@ -1,4 +1,4 @@
-import { date, DateOptions } from "quasar"
+import { date, DateOptions, DateUnitOptions } from "quasar"
 
 export const FRIENDLY_DATE_FORMAT = 'DD.MM.YYYY'
 export const FRIENDLY_DATE_TIME_FORMAT = 'DD.MM.YYYY, HH:mm:ss'
@@ -61,14 +61,6 @@ export class AppDate {
         )
     }
 
-    add(options: DateOptions): AppDate {
-        /**
-         * Добавляет опции к дате, возвращает новую дату
-         * https://quasar.dev/quasar-utils/date-utils#add-subtract
-         * */
-        return AppDate.fromDate(date.addToDate(this.date, options))
-    }
-
     get dayOfWeek() {
         return this._dayOfWeek || (
             this._dayOfWeek = date.getDayOfWeek(this.date)
@@ -82,6 +74,53 @@ export class AppDate {
     }
 
     isWeekend() {
-        return this.dayOfWeek === 6 || this.dayOfWeek === 7
+        return this.dayOfWeek === 5 || this.dayOfWeek === 6
     }
+
+    isToday() {
+        return this.friendly === AppDate.today().friendly
+    }
+
+    add(options: DateOptions): AppDate {
+        /**
+         * Добавляет опции к дате, возвращает новую дату
+         * https://quasar.dev/quasar-utils/date-utils#add-subtract
+         * */
+        return AppDate.fromDate(date.addToDate(this.date, options))
+    }
+
+    diff(subtractDate: Date | AppDate, unit?: Parameters<typeof date.getDateDiff>[2]): number {
+        /**
+         * Возвращает разницу в днях между датой и текущей датой
+         * https://quasar.dev/quasar-utils/date-utils#difference
+         * */
+
+        if (subtractDate instanceof AppDate) subtractDate = subtractDate.date
+        return date.getDateDiff(this.date, subtractDate, unit)
+    }
+
+    isAfter(date: Date | AppDate): boolean {
+        /** Больше переданной даты */
+        if (date instanceof Date) date = AppDate.fromDate(date)
+        return this.iso > date.iso
+    }
+
+    isAfterOrEqual(date: Date | AppDate): boolean {
+        /** Больше или равно переданной даты */
+        if (date instanceof Date) date = AppDate.fromDate(date)
+        return this.iso >= date.iso
+    }
+
+    isBefore(date: Date | AppDate): boolean {
+        /** Меньше переданной даты */
+        if (date instanceof Date) date = AppDate.fromDate(date)
+        return this.iso < date.iso
+    }
+
+    isBeforeOrEqual(date: Date | AppDate): boolean {
+        /** Меньше или равно переданной даты */
+        if (date instanceof Date) date = AppDate.fromDate(date)
+        return this.iso <= date.iso
+    }
+
 }

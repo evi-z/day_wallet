@@ -1,12 +1,11 @@
-import { DatabaseDocumentBaseData, PeriodDocumentDBData, PeriodDocumentFormData, UserDBBaseData, UserDBDataType } from 'src/models/database'
-import { BaseDatabaseService } from './base'
+import { PeriodDocumentDBData, PeriodDocumentFormData, PeriodDocumentMainValuesData, PeriodDocumentMainValuesDBData, UserDBDataType } from 'src/models/database'
+import { BaseTypeDatabaseService } from './base'
 
 const PERFIX_DATABASE_NAME = 'day-wallet-user-db'
 const LOCAL_USER_ID = 'local'
 
 
-
-export class UserDatabaseService extends BaseDatabaseService {
+export class UserDatabaseService extends BaseTypeDatabaseService<UserDBDataType> {
     /** База данных для пользователя */
 
     constructor(userId: string | null) {
@@ -17,46 +16,54 @@ export class UserDatabaseService extends BaseDatabaseService {
         super(databaseName)
         this.db.createIndex({
             index: {
-                fields: ['type']
+                fields: ['document_id']
             }
         })
     }
 
-    async _postData<T extends any>(type: UserDBDataType, data: T) {
-        /** Добавляет новые данные в БД */
-
-        return this.db.post({
-            type,
-            data,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        })
-    }
-
-
     async createPeriodDocument(from: PeriodDocumentFormData) {
         /** Создаёт новый документ периода */
 
-        return this._postData(UserDBDataType.document, from)
+        return this._createAuditTypeDocument(UserDBDataType.document, from)
     }
 
     async fetchPeriodDocuments() {
         /** Получает все документы периода */
 
-        return this.find<PeriodDocumentDBData>({
+        return this._findByType<PeriodDocumentDBData>(UserDBDataType.document)
+    }
+
+    async removePeriodDocument(documentId: string) {
+        /** Удаляет документ периода и связанные документы */
+
+        return this.removeDocumentById(documentId).then(() => {  // Удаляем документ периода
+            return this._removeDocumentsByFind({  // Удаляем связанные документы
+                selector: {
+                    document_id: documentId
+                }
+            })
+        })
+    }
+
+    async fetchPeriodDocumentMainValues(documentId: string) {
+        /** Получает основные значения документа периода */
+
+        return this._findOneOrNull<PeriodDocumentMainValuesDBData>({
             selector: {
-                type: UserDBDataType.document
+                type: UserDBDataType.document_main_values,
+                document_id: documentId
             }
         })
     }
 
-    async removePeriodDocument(id: string) {
-        /** Удаляет документ периода */
+    /** Устанавливает (создаёт или обновляет) основные значения документа периода */
+    async setPeriodDocumentMainValues(documentId: string, values: PeriodDocumentMainValuesData) {
 
-        return this.db.get(id).then(doc => {
-            return this.db.remove(doc)
-        }).catch(err => {
-            console.error('Error removing period document:', err)
+        return this.fetchPeriodDocumentMainValues(documentId).then(doc => {
+            return this._createOrUpdateTypeDocument(doc, UserDBDataType.document_main_values, {
+                document_id: documentId,
+                ...values,
+            } as PeriodDocumentMainValuesData & { document_id: string })
         })
     }
 }
