@@ -1,4 +1,5 @@
 import { QTableColumn } from "quasar"
+import { TableCellType, TableCellTypeMap, TableCellFormatTypeMap, TableCellFormatType } from "src/components/TableCell/models"
 import { PeriodDocumentMainValuesData } from "src/models/database"
 import { PeriodDocCurrentDataFields, PeriodDocCurrentDataFieldsMap, PeriodDocInitDataFields, PeriodDocInitDataFieldsMap } from "src/models/period_doc"
 import { AppDate } from "src/utils/date"
@@ -28,17 +29,11 @@ export const PeriodDocCalendarDataColumns: QTableColumn[] = [
     { field: PeriodDocCalendarColumn.fact, name: PeriodDocCalendarColumn.fact, label: 'Факт', align: 'left', style: inputColumnStyle },
 ] as const
 
-export const PeriodDocInitAndCurrentCellType = {
-    text: 'text',
-    input: 'input',
-} as const
-
-export type PeriodDocInitAndCurrentCellType = typeof PeriodDocInitAndCurrentCellType[keyof typeof PeriodDocInitAndCurrentCellType]
-
 export type PeriodDocInitAndCurrentBaseRow<T extends string> = {
     name: T,
     label: string,
-    type: PeriodDocInitAndCurrentCellType,
+    cellType: TableCellTypeMap,
+    cellFormat: TableCellFormatTypeMap,
     // value: any,
 }
 
@@ -47,45 +42,53 @@ export const PeriodDocInitDataRows: PeriodDocInitAndCurrentBaseRow<PeriodDocInit
     {
         name: PeriodDocInitDataFields.total_budget,
         label: 'Общий бюджет',
-        type: PeriodDocInitAndCurrentCellType.input,
+        cellType: TableCellType.input,
+        cellFormat: TableCellFormatType.currency,
     },
     {
         name: PeriodDocInitDataFields.weekend_plan,
         label: 'План на выходные',
-        type: PeriodDocInitAndCurrentCellType.input,
+        cellType: TableCellType.input,
+        cellFormat: TableCellFormatType.currency,
     },
     {
         name: PeriodDocInitDataFields.total_days,
         label: 'Всего дней',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.plain,
     },
     {
         name: PeriodDocInitDataFields.weekend_days,
         label: 'Выходных дней',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.plain,
     },
     {
         name: PeriodDocInitDataFields.weekday_days,
         label: 'Будних дней',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.plain,
     },
 
     {
         name: PeriodDocInitDataFields.total_weekends_budget,
         label: 'Бюджет на выходные',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.currency,
     },
 
     {
         name: PeriodDocInitDataFields.total_weekdays_budget,
         label: 'Бюджет на будни',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.currency,
     },
 
     {
         name: PeriodDocInitDataFields.initial_plan,
         label: 'Начальный план',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.currency,
     },
 ] as const
 
@@ -94,57 +97,68 @@ export const PeriodDocCurrentDataRows: PeriodDocInitAndCurrentBaseRow<PeriodDocC
     {
         name: PeriodDocCurrentDataFields.current_date,
         label: 'Текущая дата',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.plain,
     },
     {
         name: PeriodDocCurrentDataFields.days_remaining,
         label: 'Осталось дней',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.plain,
     },
     {
         name: PeriodDocCurrentDataFields.weekends_remaining,
         label: 'Осталось выходных',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.plain,
     },
     {
         name: PeriodDocCurrentDataFields.weekdays_remaining,
         label: 'Осталось будних',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.plain,
     },
     {
         name: PeriodDocCurrentDataFields.total_spent_actual,
         label: 'Всего потрачено',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.plain,
     },
     {
         name: PeriodDocCurrentDataFields.spent_on_weekends,
         label: 'Потрачено выходные',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.currency,
     },
     {
         name: PeriodDocCurrentDataFields.spent_on_weekdays,
         label: 'Потрачено будни',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.currency,
     },
     {
         name: PeriodDocCurrentDataFields.total_remaining,
         label: 'Общий остаток',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.currency,
     },
     {
         name: PeriodDocCurrentDataFields.remaining_for_weekends,
         label: 'Остаток выходные',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.currency,
     },
     {
         name: PeriodDocCurrentDataFields.remaining_for_weekdays,
         label: 'Остаток будни',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.currency,
     },
     {
         name: PeriodDocCurrentDataFields.plan_for_today,
         label: 'План на сегодня',
-        type: PeriodDocInitAndCurrentCellType.text,
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.currency,
     },
 ] as const
 

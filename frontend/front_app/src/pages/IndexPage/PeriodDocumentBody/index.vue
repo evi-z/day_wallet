@@ -17,25 +17,17 @@
                                 <q-td key="label" :props="props">
                                     {{ props.row.label }}
                                 </q-td>
-                                <template v-if="props.row.type === PeriodDocInitAndCurrentCellType.text">
-                                    <q-td key="value" :props="props">
-                                        {{ initDataValues[props.row.name as keyof PeriodDocInitCalcRowValues] }}
-                                    </q-td>
-                                </template>
-                                <template v-else-if="props.row.type === PeriodDocInitAndCurrentCellType.input">
-                                    <TableInputCell td-key="value" :td-props="props"
-                                        :model-value="initDataModel(props.row.name)"
-                                        @update:model-value="(value) => handleUpdateInitDataModel(props.row.name, value)" />
-                                </template>
 
+                                <TableCell td-key="value" :td-props="props" :cell-type="props.row.cellType"
+                                    align-content="right" :cell-format="props.row.cellFormat"
+                                    :model-value="initDataModel(props.row.name)"
+                                    @update:model-value="(value) => handleUpdateInitDataModel(props.row.name, value)" />
                             </q-tr>
-
                         </template>
                     </q-table>
                 </q-card-section>
             </q-card>
         </div>
-
         <!-- Текущие данные -->
         <div class="grid-item-current">
             <q-card class="full-height">
@@ -52,15 +44,11 @@
                                 <q-td key="label" :props="props">
                                     {{ props.row.label }}
                                 </q-td>
-                                <template v-if="props.row.type === PeriodDocInitAndCurrentCellType.text">
-                                    <q-td key="value" :props="props">
-                                        {{ currentDataValues[props.row.name as keyof PeriodDocCurrentRowValues] }}
-                                    </q-td>
-                                </template>
-                                <template v-else-if="props.row.type === PeriodDocInitAndCurrentCellType.input">
-                                    <TableInputCell td-key="value" :td-props="props"
-                                        v-model="currentDataValues[props.row.name as keyof PeriodDocCurrentRowValues]" />
-                                </template>
+
+                                <TableCell td-key="value" :td-props="props" :cell-type="props.row.cellType"
+                                    :cell-format="props.row.cellFormat" align-content="right"
+                                    v-model="currentDataValues[props.row.name as keyof PeriodDocCurrentRowValues]" />
+
                             </q-tr>
                         </template>
                     </q-table>
@@ -93,12 +81,13 @@
                                 <q-td :key="PeriodDocCalendarColumn.day_of_week" :props="props">
                                     {{ props.row.date.dayOfWeekString }}
                                 </q-td>
-                                <q-td :key="PeriodDocCalendarColumn.plan" :props="props">
-                                    {{ props.row.plan }}
-                                </q-td>
+                                <TableCell :td-key="PeriodDocCalendarColumn.plan" :td-props="props"
+                                    :cell-type="TableCellType.text" :cell-format="TableCellFormatType.currency"
+                                    align-content="right" :model-value="props.row.plan" />
 
-                                <TableInputCell :td-key="PeriodDocCalendarColumn.fact" :td-props="props"
-                                    v-model="calendarFactValues[props.row.date.friendly]" />
+                                <TableCell :td-key="PeriodDocCalendarColumn.fact" :td-props="props"
+                                    :cell-type="TableCellType.input" :cell-format="TableCellFormatType.currency"
+                                    align-content="right" v-model="calendarFactValues[props.row.date.friendly]" />
 
                             </q-tr>
                         </template>
@@ -112,7 +101,6 @@
 <script setup lang="ts">
 import {
     PeriodDocCalendarDataColumns, PeriodDocInitAndCurrentDataColumns, PeriodDocCurrentDataRows, PeriodDocInitDataRows, PeriodDocCalendarColumn,
-    PeriodDocInitAndCurrentCellType,
     PeriodDocInitCalcRowValues,
     PeriodDocCurrentRowValues,
     PeriodDocCalendarRow,
@@ -121,11 +109,12 @@ import {
 import { onMounted, ref, shallowRef, computed, nextTick, triggerRef } from 'vue';
 import { PeriodDocumentCalendarFactValuesDBData, PeriodDocumentDBData, PeriodDocumentMainValuesData, PeriodDocumentMainValuesDBData } from 'src/models/database';
 import { AppDate } from 'src/utils/date';
-import TableInputCell from './TableInputCell.vue';
 import { getPeriodDocumentCalendarDataRows } from './funs';
 import app from 'src/services/app';
 import { watchPausable } from '@vueuse/core';
 import { PeriodDocInitDataFields, PeriodDocInitDataFieldsMap } from 'src/models/period_doc';
+import TableCell from 'src/components/TableCell/index.vue';
+import { TableCellType, TableCellFormatType } from 'src/components/TableCell/models';
 
 const initCurrentPagination = ref({ rowsPerPage: 0 })
 
