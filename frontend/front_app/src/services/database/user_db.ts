@@ -1,4 +1,4 @@
-import { PeriodDocumentDBData, PeriodDocumentFormData, PeriodDocumentMainValuesData, PeriodDocumentMainValuesDBData, UserDBDataType } from 'src/models/database'
+import { PeriodDocumentCalendarFactValuesData, PeriodDocumentCalendarFactValuesDBData, PeriodDocumentDBData, PeriodDocumentFormData, PeriodDocumentMainValuesData, PeriodDocumentMainValuesDBData, UserDBDataType } from 'src/models/database'
 import { BaseTypeDatabaseService } from './base'
 
 const PERFIX_DATABASE_NAME = 'day-wallet-user-db'
@@ -21,21 +21,18 @@ export class UserDatabaseService extends BaseTypeDatabaseService<UserDBDataType>
         })
     }
 
+    /** Создаёт новый документ периода */
     async createPeriodDocument(from: PeriodDocumentFormData) {
-        /** Создаёт новый документ периода */
-
         return this._createAuditTypeDocument(UserDBDataType.document, from)
     }
 
+    /** Получает все документы периода */
     async fetchPeriodDocuments() {
-        /** Получает все документы периода */
-
         return this._findByType<PeriodDocumentDBData>(UserDBDataType.document)
     }
 
+    /** Удаляет документ периода и связанные документы */
     async removePeriodDocument(documentId: string) {
-        /** Удаляет документ периода и связанные документы */
-
         return this.removeDocumentById(documentId).then(() => {  // Удаляем документ периода
             return this._removeDocumentsByFind({  // Удаляем связанные документы
                 selector: {
@@ -45,9 +42,8 @@ export class UserDatabaseService extends BaseTypeDatabaseService<UserDBDataType>
         })
     }
 
+    /** Получает основные значения документа периода */
     async fetchPeriodDocumentMainValues(documentId: string) {
-        /** Получает основные значения документа периода */
-
         return this._findOneOrNull<PeriodDocumentMainValuesDBData>({
             selector: {
                 type: UserDBDataType.document_main_values,
@@ -58,12 +54,31 @@ export class UserDatabaseService extends BaseTypeDatabaseService<UserDBDataType>
 
     /** Устанавливает (создаёт или обновляет) основные значения документа периода */
     async setPeriodDocumentMainValues(documentId: string, values: PeriodDocumentMainValuesData) {
-
         return this.fetchPeriodDocumentMainValues(documentId).then(doc => {
             return this._createOrUpdateTypeDocument(doc, UserDBDataType.document_main_values, {
                 document_id: documentId,
                 ...values,
             } as PeriodDocumentMainValuesData & { document_id: string })
+        })
+    }
+
+    /** Получает значения фактов календаря документа периода */
+    async fetchPeriodDocumentCalendarFactValues(documentId: string) {
+        return this._findOneOrNull<PeriodDocumentCalendarFactValuesDBData>({
+            selector: {
+                type: UserDBDataType.document_calendar_fact_values,
+                document_id: documentId
+            }
+        })
+    }
+
+    /** Устанавливает (создаёт или обновляет) значения фактов календаря документа периода */
+    async setPeriodDocumentCalendarFactValues(documentId: string, values: PeriodDocumentCalendarFactValuesData) {
+        return this.fetchPeriodDocumentCalendarFactValues(documentId).then(doc => {
+            return this._createOrUpdateTypeDocument(doc, UserDBDataType.document_calendar_fact_values, {
+                document_id: documentId,
+                ...values,
+            } as PeriodDocumentCalendarFactValuesData & { document_id: string })
         })
     }
 }

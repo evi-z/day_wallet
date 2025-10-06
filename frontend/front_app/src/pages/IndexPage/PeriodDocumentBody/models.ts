@@ -148,18 +148,15 @@ export const PeriodDocCurrentDataRows: PeriodDocInitAndCurrentBaseRow<PeriodDocC
     },
 ] as const
 
-export type PeriodDocInitRowValues = Record<PeriodDocInitDataFieldsMap, number>
+export type PeriodDocInitCalcRowValues = Record<Exclude<PeriodDocInitDataFieldsMap, 'total_budget' | 'weekend_plan'>, number>
 export type PeriodDocCurrentRowValues = Record<PeriodDocCurrentDataFieldsMap, number | string>
 export type PeriodDocCalendarRow = {
     date: AppDate,
     plan: number,
 }
 
-export type PeriodDocCalendarRowValues = Record<string, number>
-
+/** Дефолтные значения для основных значений документа периода */
 export const DefaultPeriodDocumentMainValues: PeriodDocumentMainValuesData = {
-    init_values: {
-        total_budget: 0,
-        weekend_plan: 0,
-    },
+    total_budget: 0,
+    weekend_plan: 0,
 } as const

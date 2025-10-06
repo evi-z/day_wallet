@@ -1,4 +1,5 @@
-import { PeriodDocInitRowValues } from "src/pages/IndexPage/PeriodDocumentBody/models"
+import { PeriodDocInitCalcRowValues } from "src/pages/IndexPage/PeriodDocumentBody/models"
+import { PeriodDocInitDataFieldsMap } from "./period_doc"
 
 export type DatabaseTypeDocumentBaseData<T extends string = string, D extends object = object> = D & PouchDB.Core.ExistingDocument<{
     /** Базовый тип документа с типом */
@@ -14,9 +15,9 @@ export type DatabaseTypeDocumentAuditData<T extends string = string, D extends o
 }
 
 export const UserDBDataType = {  /** Типы данных для БД пользователя */
-    document: 'document',
-    document_main_values: 'document_main_values',
-    document_calendar_values: 'document_calendar_values'
+    document: 'document',  // Документ периода
+    document_main_values: 'document_main_values',  // Основные значения документа периода
+    document_calendar_fact_values: 'document_calendar_fact_values',  // Значения фактов календаря
 } as const
 
 export type UserDBDataType = typeof UserDBDataType[keyof typeof UserDBDataType]
@@ -43,10 +44,12 @@ export type PeriodDocumentFormData = {
 export type PeriodDocumentDBData = UserDBAuditData<PeriodDocumentFormData>
 
 /** Основные значения для инициализации документа периода */
-export type PeriodDocumentInitMainValues = Pick<PeriodDocInitRowValues, 'total_budget' | 'weekend_plan'>
+export type PeriodDocumentMainValuesData = Record<Extract<PeriodDocInitDataFieldsMap, 'total_budget' | 'weekend_plan'>, number> & {
 
-export type PeriodDocumentMainValuesData = {
-    init_values: PeriodDocumentInitMainValues,
 }
 
 export type PeriodDocumentMainValuesDBData = BasePeriodDocumentRelationDocument<PeriodDocumentMainValuesData>
+
+/** Значения фактов календаря */
+export type PeriodDocumentCalendarFactValuesData = Record<string, number>
+export type PeriodDocumentCalendarFactValuesDBData = BasePeriodDocumentRelationDocument<PeriodDocumentCalendarFactValuesData>

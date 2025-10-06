@@ -1,7 +1,7 @@
 <template>
     <q-td :key="tdKey" :props="tdProps" class="no-padding">
         <q-input class="cell-input-box" mask="#######" input-class="cell-input-field text-right q-px-md q-py-none" dense
-            v-model.number="inputValue" @focus="handleFocus" @blur="handleBlur" ref="inputRef" />
+            v-model.number="inputValue" @focus="handleFocus" @blur="handleBlur" ref="inputRef" @keyup.enter="handleEnter" />
     </q-td>
 </template>
 
@@ -32,6 +32,10 @@ const handleFocus = () => {
 
 const handleBlur = () => {
     value.value = inputValue.value
+}
+
+const handleEnter = () => {
+    inputRef.value?.blur()
 }
 
 </script>
