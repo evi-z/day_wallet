@@ -9,7 +9,6 @@
 
 <script setup lang="ts">
 import { QTableSlots } from 'quasar';
-import { toRefs } from 'vue';
 import { TableCellFormatType, TableCellFormatTypeMap, TableCellTypeMap, TableCellType, TableCellAlign } from './models';
 import CellCurrencyInputBody from './CellCurrencyInputBody.vue';
 import CellSpanBody from './CellSpanBody.vue';
@@ -22,14 +21,16 @@ interface Props {
     alignContent?: TableCellAlign,
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    cellFormat: TableCellFormatType.plain,
-    alignContent: 'right'
-})
-const { tdProps, cellType, cellFormat, alignContent } = toRefs(props)
-const { tdKey } = props
+const {
+    tdKey,
+    tdProps,
+    cellType,
+    cellFormat = TableCellFormatType.plain,
+    alignContent = 'right'
+} = defineProps<Props>()
 
 const value = defineModel<any>({ required: true })
+
 </script>
 
 <style lang="scss" scoped></style>

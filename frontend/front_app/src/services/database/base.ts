@@ -129,7 +129,7 @@ export class BaseTypeDatabaseService<T extends string> extends BaseDatabaseServi
             ...data, // Обновляем переданными данными
         })
     }
-    
+
     async _createOrUpdateTypeDocument<D extends object>(
         exDoc: PouchDB.Core.ExistingDocument<D> | undefined | null, type: T, data: D
     ) {
@@ -146,5 +146,4 @@ export class BaseTypeDatabaseService<T extends string> extends BaseDatabaseServi
 
         return this._find<T>({ selector: { type } })
     }
-
 }

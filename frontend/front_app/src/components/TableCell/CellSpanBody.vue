@@ -5,20 +5,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, toRefs } from 'vue';
-import { TableCellFormatType,  TableCellFormatTypeMap, TableCellAlign } from './models';
+import { computed } from 'vue';
+import { TableCellFormatType, TableCellFormatTypeMap, TableCellAlign } from './models';
 
 interface Props {
     value: any,
     formatType?: TableCellFormatTypeMap,
-    alignContent?: TableCellAlign,
+    alignContent: TableCellAlign,
 }
 
-const props = defineProps<Props>()
-const { value, formatType, alignContent } = toRefs(props)
+const {
+    value,
+    formatType = TableCellFormatType.plain,
+    alignContent
+} = defineProps<Props>()
 
 const boxClass = computed(() => {
-    return `fit text-${alignContent.value}`
+    return `fit text-${alignContent}`
 })
 
 const formatCurrency = (val: number) => {
@@ -30,8 +33,8 @@ const formatCurrency = (val: number) => {
 }
 
 const displayValue = computed(() => {
-    if (formatType.value === TableCellFormatType.currency) return formatCurrency(value.value)
-    return value.value
+    if (formatType === TableCellFormatType.currency) return formatCurrency(value)
+    return value
 })
 
 </script>

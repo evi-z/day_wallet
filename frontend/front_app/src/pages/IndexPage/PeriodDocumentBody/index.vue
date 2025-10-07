@@ -47,7 +47,7 @@
 
                                 <TableCell td-key="value" :td-props="props" :cell-type="props.row.cellType"
                                     :cell-format="props.row.cellFormat" align-content="right"
-                                    v-model="currentDataValues[props.row.name as keyof PeriodDocCurrentRowValues]" />
+                                    v-model="currentDataCalcValues[props.row.name as keyof PeriodDocCurrentRowValues]" />
 
                             </q-tr>
                         </template>
@@ -81,13 +81,12 @@
                                 <q-td :key="PeriodDocCalendarColumn.day_of_week" :props="props">
                                     {{ props.row.date.dayOfWeekString }}
                                 </q-td>
-                                <TableCell :td-key="PeriodDocCalendarColumn.plan" :td-props="props"
-                                    :cell-type="TableCellType.text" :cell-format="TableCellFormatType.currency"
-                                    align-content="right" :model-value="props.row.plan" />
+                                <TableCell :td-key="PeriodDocCalendarColumn.plan" :td-props="props" cell-type="text"
+                                    cell-format="currency" align-content="right" :model-value="props.row.plan" />
 
-                                <TableCell :td-key="PeriodDocCalendarColumn.fact" :td-props="props"
-                                    :cell-type="TableCellType.input" :cell-format="TableCellFormatType.currency"
-                                    align-content="right" v-model="calendarFactValues[props.row.date.friendly]" />
+                                <TableCell :td-key="PeriodDocCalendarColumn.fact" :td-props="props" cell-type="input"
+                                    cell-format="currency" align-content="right"
+                                    v-model="calendarFactDBValues[props.row.date.friendly]" />
 
                             </q-tr>
                         </template>
@@ -111,10 +110,10 @@ import { PeriodDocumentCalendarFactValuesDBData, PeriodDocumentDBData, PeriodDoc
 import { AppDate } from 'src/utils/date';
 import { getPeriodDocumentCalendarDataRows } from './funs';
 import app from 'src/services/app';
-import { watchPausable } from '@vueuse/core';
+import { debounceFilter, EventFilter, watchPausable, watchWithFilter } from '@vueuse/core';
 import { PeriodDocInitDataFields, PeriodDocInitDataFieldsMap } from 'src/models/period_doc';
 import TableCell from 'src/components/TableCell/index.vue';
-import { TableCellType, TableCellFormatType } from 'src/components/TableCell/models';
+import { useDocumentMainValuesRef } from './sevice';
 
 const initCurrentPagination = ref({ rowsPerPage: 0 })
 
@@ -122,46 +121,47 @@ interface Props {
     document: PeriodDocumentDBData
 }
 
-const props = defineProps<Props>()
+const { document } = defineProps<Props>()
 
-const { document } = props
 const aFromDate = computed(() => AppDate.fromFriendlyFormat(document.from_date))
 const aToDate = computed(() => AppDate.fromFriendlyFormat(document.to_date))
 
 const calendarRows = shallowRef<PeriodDocCalendarRow[]>([])  // Строки календаря
 const currentDate = ref<AppDate>()  // Текущая дата
 
-const documentMainValues = ref<PeriodDocumentMainValuesDBData>({} as PeriodDocumentMainValuesDBData)  // Основные значения документа
-const initDataValues = ref<PeriodDocInitCalcRowValues>({} as PeriodDocInitCalcRowValues)  // Калькулируемые исходные данные
-const currentDataValues = ref<PeriodDocCurrentRowValues>({} as PeriodDocCurrentRowValues)  // Текущие данные
-const calendarFactValues = ref<PeriodDocumentCalendarFactValuesDBData>({} as PeriodDocumentCalendarFactValuesDBData)  // Факты календаря
+const calendarFactDBValues = ref<PeriodDocumentCalendarFactValuesDBData>({} as PeriodDocumentCalendarFactValuesDBData)  // Факты календаря
+const documentMainDBValues = ref<PeriodDocumentMainValuesDBData>({} as PeriodDocumentMainValuesDBData)  // Основные значения документа
+const documentMainDBValuesTS = useDocumentMainValuesRef(document)  // Основные значения документа
+
+const initDataCalcValues = ref<PeriodDocInitCalcRowValues>({} as PeriodDocInitCalcRowValues)  // Калькулируемые исходные данные
+const currentDataCalcValues = ref<PeriodDocCurrentRowValues>({} as PeriodDocCurrentRowValues)  // Текущие данные
 
 /** Сохранение основных значений документа в БД (с обновлением ревизии) */
 const updateMainValuesInDB = async () => {
-    console.log('UPD Before Main Values', documentMainValues.value._rev)
-    return app.userDb!.setPeriodDocumentMainValues(document._id, documentMainValues.value).then(async res => {
+    // console.log('UPD Before Main Values', documentMainDBValues.value._rev)
+    return app.userDb!.setPeriodDocumentMainValues(document._id, documentMainDBValues.value).then(async res => {
         await updateDocumentMainValuesWithoutWatcher(async () => {
-            Object.assign(documentMainValues.value, { _rev: res.rev })
-            console.log('UPD Main Values', documentMainValues.value._rev)
+            documentMainDBValues.value._rev = res.rev
+            // console.log('UPD Main Values', documentMainDBValues.value._rev)
         })
     })
 }
 
 /** Сохранение значений фактов календаря в БД (с обновлением ревизии) */
 const updateCalendarFactValuesInDB = async () => {
-    console.log('UPD Before Fact Values', calendarFactValues.value._rev)
-    return app.userDb!.setPeriodDocumentCalendarFactValues(document._id, calendarFactValues.value).then(async res => {
+    // console.log('UPD Before Fact Values', calendarFactDBValues.value._rev)
+    return app.userDb!.setPeriodDocumentCalendarFactValues(document._id, calendarFactDBValues.value).then(async res => {
 
         await updateCalendarFactValuesWithoutWatcher(async () => {
-            Object.assign(calendarFactValues.value, { _rev: res.rev })
-            console.log('UPD Fact Values', calendarFactValues.value._rev)
+            calendarFactDBValues.value._rev = res.rev
+            // console.log('UPD Fact Values', calendarFactDBValues.value._rev)
         })
     })
 }
 
 /** Наблюдатель за значениями "Общий бюджет" и "План на выходные" */
 const initDataMainValuesWatcher = watchPausable(() => [
-    documentMainValues.value.total_budget, documentMainValues.value.weekend_plan
+    documentMainDBValues.value.total_budget, documentMainDBValues.value.weekend_plan
 ], async ([totalBudget, weekendPlan]) => {
     await nextTick()
     await recalcDocumentCalcValues(false)  // Пересчёт калькулируемых данных
@@ -169,22 +169,29 @@ const initDataMainValuesWatcher = watchPausable(() => [
     await updateMainValuesInDB()
 })
 
-/** Наблюдатель за значениями фактов календаря */
-const calendarFactDataValuesWatcher = watchPausable(calendarFactValues, async (val) => {
-    console.log('calendarFactDataValuesWatcher')
+const calendarFactDataValuesWatcher = watchPausable(calendarFactDBValues, async (val) => {
     await nextTick()
     await recalcCalendarPlansAndCurrentData()
     // Сохранение значений фактов календаря в БД (TODO: Сделать частичное обновление)
     await updateCalendarFactValuesInDB()
 }, { deep: true })
 
+/** Наблюдатель за значениями фактов календаря */
+// const calendarFactDataValuesWatcher = watchPausable(calendarFactDBValues, async (val) => {
+//     // console.log('calendarFactDataValuesWatcher')
+//     await nextTick()
+//     await recalcCalendarPlansAndCurrentData()
+//     // Сохранение значений фактов календаря в БД (TODO: Сделать частичное обновление)
+//     await updateCalendarFactValuesInDB()
+// }, { deep: true })
+
 /** Получение модели значения исходных данных */
 const initDataModel = computed(() => {
     return function (name: PeriodDocInitDataFieldsMap) {
         if (
             [PeriodDocInitDataFields.total_budget, PeriodDocInitDataFields.weekend_plan].includes(name)
-        ) return documentMainValues.value[name as keyof PeriodDocumentMainValuesData]
-        return initDataValues.value[name as keyof PeriodDocInitCalcRowValues]
+        ) return documentMainDBValues.value[name as keyof PeriodDocumentMainValuesData]
+        return initDataCalcValues.value[name as keyof PeriodDocInitCalcRowValues]
     }
 })
 
@@ -192,8 +199,8 @@ const initDataModel = computed(() => {
 const handleUpdateInitDataModel = (name: PeriodDocInitDataFieldsMap, value: number) => {
     if (
         [PeriodDocInitDataFields.total_budget, PeriodDocInitDataFields.weekend_plan].includes(name)
-    ) documentMainValues.value[name as keyof PeriodDocumentMainValuesData] = value
-    else initDataValues.value[name as keyof PeriodDocInitCalcRowValues] = value
+    ) documentMainDBValues.value[name as keyof PeriodDocumentMainValuesData] = value
+    else initDataCalcValues.value[name as keyof PeriodDocInitCalcRowValues] = value
 }
 
 onMounted(async () => {
@@ -219,8 +226,8 @@ const initDocumentMainValuesFromDB = async () => {
     }
 
     await updateDocumentMainValuesWithoutWatcher(async () => {
-        documentMainValues.value = mainValues!
-        console.log('INIT Main Values', documentMainValues.value._rev)
+        documentMainDBValues.value = mainValues!
+        // console.log('INIT Main Values', documentMainDBValues.value._rev)
     })
 }
 
@@ -244,13 +251,20 @@ const initDocumentCalendarFactValuesFromDB = async () => {
     }
 
     await updateCalendarFactValuesWithoutWatcher(async () => {
-        calendarFactValues.value = calendarFactVal!
-        console.log('INIT Fact Values', calendarFactValues.value._rev)
+        calendarFactDBValues.value = calendarFactVal!
+        // console.log('INIT Fact Values', calendarFactDBValues.value._rev)
     })
 }
 
 /** Инициализация данных документа */
 const initDocument = async () => {
+
+    await documentMainDBValuesTS.init()
+    // await documentMainDBValuesTS.save()
+    // documentMainDBValuesTS.value.total_budget = 2222
+    documentMainDBValuesTS.value._rev = '2222'
+
+
     await initDocumentMainValuesFromDB()  // Инициализация основных значений документа из БД
     await initDocumentCalendarFactValuesFromDB()  // Инициализация значений фактов календаря из БД
     await initDocumentCalcValues()  // Инициализация калькулируемых исходных данных
@@ -268,7 +282,7 @@ const initDocumentCalcValues = async () => {
     calendarRows.value = getPeriodDocumentCalendarDataRows(document)  // Инициализация строк календаря
     await updateCalendarFactValuesWithoutWatcher(async () => {
         calendarRows.value.forEach(row => {  // Инициализируем факты календаря пустыми значениями (если не заданы)
-            if (!Number.isInteger(calendarFactValues.value[row.date.friendly])) calendarFactValues.value[row.date.friendly] = 0
+            if (!Number.isInteger(calendarFactDBValues.value[row.date.friendly])) calendarFactDBValues.value[row.date.friendly] = 0
         })
         // Не сохраняем в БД до первого обновления фактов
     })
@@ -285,12 +299,12 @@ const recalcDocumentCalcValues = async (recalcDays: boolean = true) => {
 /** Пересчёт калькулируемых исходных данных */
 const recalcInitDataValues = async (recalcDays: boolean = true) => {
 
-    initDataValues.value = function (): PeriodDocInitCalcRowValues {
-        const totalDays = recalcDays ? calendarRows.value.length : initDataValues.value.total_days
-        const weekendDays = recalcDays ? calendarRows.value.filter(row => row.date.isWeekend()).length : initDataValues.value.weekend_days
-        const weekdayDays = recalcDays ? calendarRows.value.filter(row => !row.date.isWeekend()).length : initDataValues.value.weekday_days
-        const totalWeekendsBudget = weekendDays * documentMainValues.value.weekend_plan
-        const totalWeekdaysBudget = documentMainValues.value.total_budget - totalWeekendsBudget
+    initDataCalcValues.value = function (): PeriodDocInitCalcRowValues {
+        const totalDays = recalcDays ? calendarRows.value.length : initDataCalcValues.value.total_days
+        const weekendDays = recalcDays ? calendarRows.value.filter(row => row.date.isWeekend()).length : initDataCalcValues.value.weekend_days
+        const weekdayDays = recalcDays ? calendarRows.value.filter(row => !row.date.isWeekend()).length : initDataCalcValues.value.weekday_days
+        const totalWeekendsBudget = weekendDays * documentMainDBValues.value.weekend_plan
+        const totalWeekdaysBudget = documentMainDBValues.value.total_budget - totalWeekendsBudget
 
         return {
             total_days: totalDays,
@@ -312,11 +326,11 @@ const recalcCalendarPlansAndCurrentData = async () => {
 
     /** Считает сумму фактов до переданного индекса даты */
     function sumFact(upToIndex: number) {
-        return calendarRows.value.slice(0, upToIndex).reduce((acc, row) => acc + calendarFactValues.value[row.date.friendly]!, 0);
+        return calendarRows.value.slice(0, upToIndex).reduce((acc, row) => acc + calendarFactDBValues.value[row.date.friendly]!, 0);
     }
 
-    calendarRows.value[0]!.plan = initDataValues.value.initial_plan // План первого дня
-    let lastCalcPlan = initDataValues.value.initial_plan  // Последний рассчитанный план
+    calendarRows.value[0]!.plan = initDataCalcValues.value.initial_plan // План первого дня
+    let lastCalcPlan = initDataCalcValues.value.initial_plan  // Последний рассчитанный план
 
     /** Заполенение плана до текущей даты */
     for (let i = 1; i < calendarRows.value.length; i++) {
@@ -335,11 +349,11 @@ const recalcCalendarPlansAndCurrentData = async () => {
         // Рассчитываем план на сегодня
         lastCalcPlan = remainingWeekends > 0 ? Math.round(
             // (Изначальный план - потрачено всего до сегодня - план на оставшиеся выходные) / оставшиеся будни
-            (documentMainValues.value.total_budget - spentSoFar - (remainingWeekends * documentMainValues.value.weekend_plan)) / remainingWeekdays
+            (documentMainDBValues.value.total_budget - spentSoFar - (remainingWeekends * documentMainDBValues.value.weekend_plan)) / remainingWeekdays
         ) : 0
 
         // Проставляем план (если выходной - план выходного дня)
-        row.plan = row.date.isWeekend() ? documentMainValues.value.weekend_plan : lastCalcPlan
+        row.plan = row.date.isWeekend() ? documentMainDBValues.value.weekend_plan : lastCalcPlan
     }
 
     triggerRef(calendarRows)  // Тригер обновления строк календаря
@@ -353,21 +367,21 @@ const recalcCalendarPlansAndCurrentData = async () => {
     }
 
     /** Текущие данные */
-    currentDataValues.value = function (): PeriodDocCurrentRowValues {
+    currentDataCalcValues.value = function (): PeriodDocCurrentRowValues {
         const daysRemaining = aToDate.value.diff(currentDate.value!) + 1 // Осталось дней (включая текущий день)
         const weekendsRemaining = countRemainingDays(currentDayIndex, true)  // Осталось выходных дней
         const weekdaysRemaining = daysRemaining - weekendsRemaining // Осталось будних дней
 
         const totalSpent = sumFact(currentDayIndex)  // Всего потрачено
         const spentOnWeekends = calendarRows.value.filter(  // Потрачено в выходные
-            row => row.date.isWeekend()).reduce((acc, row) => acc + calendarFactValues.value[row.date.friendly]!, 0
+            row => row.date.isWeekend()).reduce((acc, row) => acc + calendarFactDBValues.value[row.date.friendly]!, 0
             )
         const spentOnWeekdays = totalSpent - spentOnWeekends  // Потрачено в будние
 
-        const totalRemaining = documentMainValues.value.total_budget - totalSpent  // Обший остаток
+        const totalRemaining = documentMainDBValues.value.total_budget - totalSpent  // Обший остаток
         const remainingForWeekends = (  // Отсалось на выходные (не больше общего остатка)
-            weekendsRemaining * documentMainValues.value.weekend_plan
-        ) > totalRemaining ? totalRemaining : (weekendsRemaining * documentMainValues.value.weekend_plan)
+            weekendsRemaining * documentMainDBValues.value.weekend_plan
+        ) > totalRemaining ? totalRemaining : (weekendsRemaining * documentMainDBValues.value.weekend_plan)
         const remainingForWeekdays = totalRemaining - remainingForWeekends  // Отсалось на будни
 
         return {

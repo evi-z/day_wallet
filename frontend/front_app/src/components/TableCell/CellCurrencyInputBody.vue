@@ -1,23 +1,20 @@
 <template>
-    <q-input class="cell-input-box" :input-class="inputClass" dense
-        v-model="formattedValue" @focus="handleFocus" @blur="handleBlur" ref="inputRef" @keyup.enter="handleEnter" />
+    <q-input class="cell-input-box" :input-class="inputClass" dense v-model="formattedValue" @focus="handleFocus"
+        @blur="handleBlur" ref="inputRef" @keyup.enter="handleEnter" />
 </template>
 
 <script setup lang="ts">
-import { QTableSlots } from 'quasar';
-import { toRefs, ref, watch, computed, watchEffect } from 'vue';
+import { toRefs, watch, computed, } from 'vue';
 import { QInput } from 'quasar';
 import { useCurrencyInput } from 'vue-currency-input';
-import { TableCellAlign, TableCellFormatType, TableCellFormatTypeMap } from './models';
+import { TableCellAlign, TableCellFormatTypeMap } from './models';
 
 interface Props {
     formatType?: TableCellFormatTypeMap,
-    alignContent?: TableCellAlign,
+    alignContent: TableCellAlign,
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    formatType: TableCellFormatType.plain,
-})
+const props = defineProps<Props>()
 const { formatType, alignContent } = toRefs(props)
 
 const value = defineModel<any>({ required: true })
@@ -33,9 +30,10 @@ const { inputRef, formattedValue, numberValue, setValue } = useCurrencyInput({
     useGrouping: true,
 }, false)
 
+
 watch(value, (val) => {  // Изменение значения извне компонента
     setValue(val)
-    console.log('Watch', val, formattedValue.value, numberValue.value)
+    // console.log('Watch', val, formattedValue.value, numberValue.value)
 }, { immediate: false })
 
 const handleFocus = () => {
