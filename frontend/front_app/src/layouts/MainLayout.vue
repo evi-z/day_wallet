@@ -8,7 +8,10 @@
                     Day Wallet
                 </q-toolbar-title>
 
-                <div>v1.0</div>
+                <!-- <div>v1.0</div> -->
+                <div class="row items-center q-gutter-x-sm">
+                    <q-btn flat dense round icon="sym_o_logout" aria-label="Выйти" @click="logout"/>
+                </div>
             </q-toolbar>
         </q-header>
 
@@ -28,7 +31,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { PAGES } from 'src/router/models';
+import { useRouter } from 'vue-router';
 
+const $router = useRouter();
+
+const logout = () => {
+    $router.push({ name: PAGES.Login });
+}
 
 </script>
 

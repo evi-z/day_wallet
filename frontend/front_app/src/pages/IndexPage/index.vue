@@ -72,6 +72,7 @@ const fetchPeriodDocuments = async (selectTabId?: string) => {
 }
 
 onMounted(async () => {
+    console.log('🔍 IndexPage mounted')
     await fetchPeriodDocuments()
 })
 

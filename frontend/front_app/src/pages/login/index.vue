@@ -16,7 +16,7 @@
                         <div class="login-title text-white text-h4 text-weight-light q-mt-md">
                             Day Wallet
                         </div>
-                        <div class="login-subtitle text-white-7 text-body1 q-mt-xs">
+                        <div class="login-subtitle text-white text-weight-light text-subtitle1 q-mt-xs">
                             Добро пожаловать
                         </div>
                     </div>
@@ -24,13 +24,13 @@
                     <q-card class="login-card shadow-24" flat>
                         <q-card-section class="q-pa-xl">
                             <div class="text-center q-mb-xl">
-                                <div class="text-grey-9 text-h5 text-weight-bold">
+                                <div class="text-grey-9 text-h5">
                                     Вход в систему
                                 </div>
                             </div>
 
                             <q-form @submit.prevent="login" class="q-gutter-md">
-                                <q-input outlined v-model="loginForm.username" label="Имя пользователя" color="primary"
+                                <q-input outlined v-model="loginForm.username" label="Номер или почта" color="primary"
                                     label-color="grey-7" class="login-input" autocomplete="username" spellcheck="false"
                                     :error="state.hasSubmitted && (!loginForm.username || loginForm.username.length === 0)"
                                     :error-message="state.hasSubmitted && (!loginForm.username || loginForm.username.length === 0) ? 'Поле обязательно для заполнения' : ''"
@@ -68,36 +68,39 @@
                             </q-form>
 
                             <!-- Дополнительные опции -->
-                            <div class="text-center q-mt-lg">
-                                <div class="row q-gutter-md justify-center">
-                                    <q-btn flat no-caps label="Зарегистрироваться" color="primary"
-                                        class="secondary-button" @click="$router.push('/register')" />
-                                    <q-btn flat no-caps label="Забыли пароль?" color="grey-7" class="secondary-button"
-                                        @click="$router.push('/forgot-password')" />
+                            <div class="text-center q-mt-md">
+                                <div class="column q-y-gutter-xs justify-center">
+                                    <q-btn flat no-caps dense label="Зарегистрироваться" color="primary"
+                                        class="secondary-button" @click="clickRegisterBtn" />
+                                    <q-btn flat no-caps dense label="Оффлайн режим" color="deep-orange-8"
+                                        class="secondary-button" @click="clickLocalModeBtn" />
+                                    <q-btn  flat no-caps dense label="Забыли пароль?" color="grey-7"
+                                        class="secondary-button text-sm" @click="$router.push('/forgot-password')" />
+
                                 </div>
                             </div>
 
                             <!-- Разделитель -->
-                            <div class="q-mt-lg q-mb-lg">
-                                <q-separator color="grey-4">
-                                    <span class="text-grey-6 bg-white q-px-md text-caption">или войдите через</span>
-                                </q-separator>
+                            <div class="q-my-md">
+                                <div class="custom-separator">
+                                    <span class="separator-text text-grey-6 text-caption">или войдите через</span>
+                                </div>
                             </div>
 
                             <!-- Социальные входы -->
                             <div class="text-center">
-                                <div class="row q-gutter-sm justify-center">
-                                    <q-btn round size="lg" class="social-button social-yandex" @click="loginWithYandex"
-                                        :aria-label="'Войти через Яндекс'">
-                                        <div class="social-icon yandex-icon">Я</div>
+                                <div class="row q-gutter-x-sm justify-center">
+                                    <q-btn round class="social-button social-yandex" @click="loginWithYandex"
+                                        aria-label="Войти через Яндекс">
+                                        <q-icon name="fa-brands fa-yandex" size="24px" color="red-10" />
                                     </q-btn>
-                                    <q-btn round size="lg" class="social-button social-vk" @click="loginWithVK"
-                                        :aria-label="'Войти через VK'">
-                                        <div class="social-icon vk-icon">VK</div>
+                                    <q-btn round class="social-button social-vk" @click="loginWithVK"
+                                        aria-label="Войти через VK">
+                                        <q-icon name="fa-brands fa-vk" size="34px" color="blue-10" />
                                     </q-btn>
-                                    <q-btn round size="lg" class="social-button social-google" @click="loginWithGoogle"
-                                        :aria-label="'Войти через Google'">
-                                        <q-icon name="fa-google" size="20px" color="#ea4335" />
+                                    <q-btn round class="social-button social-google" @click="loginWithGoogle"
+                                        aria-label="Войти через Google">
+                                        <q-icon name="fa-brands fa-google" size="24px" color="light-blue-8" />
                                     </q-btn>
                                 </div>
                             </div>
@@ -111,6 +114,7 @@
 
 <script setup lang="ts">
 import { useQuasar } from 'quasar';
+import { PAGES } from 'src/router/models';
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -174,9 +178,20 @@ const loginWithGoogle = () => {
     // TODO: Реализовать вход через Google
     console.log('Вход через Google будет реализован позже');
 };
+
+const clickRegisterBtn = () => {
+    $router.push('/register');
+}
+
+const clickLocalModeBtn = () => {
+    $router.push({ name: PAGES.Index });
+}
 </script>
 
 <style lang="scss" scoped>
+$form-element-radius: 12px;
+$login-card-background: rgba(255, 255, 255, 0.95);
+
 .login-page {
     background: linear-gradient(135deg,
             $primary 0%,
@@ -184,7 +199,182 @@ const loginWithGoogle = () => {
             $accent 100%);
     position: relative;
     overflow: hidden;
-    min-height: 100vh;
+    min-height: 100dvh;
+
+    .login-container {
+        width: 100%;
+        max-width: 420px;
+        padding: 24px;
+        z-index: 10;
+        position: relative;
+
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            transition: all 0.3s ease;
+
+            &:hover {
+                transform: scale(1.05);
+                background: rgba(255, 255, 255, 0.2);
+            }
+        }
+
+        .login-title {
+            background: linear-gradient(135deg,
+                    rgba(255, 255, 255, 1) 0%,
+                    rgba(255, 255, 255, 0.8) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .login-subtitle {
+            opacity: 0.95;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-card {
+            background: $login-card-background;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1); // Анимация появления
+
+            &:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            }
+
+            .login-input {
+                transition: all 0.3s ease;
+
+                :deep(.q-field__control) {
+                    border-radius: $form-element-radius;
+                    transition: all 0.3s ease;
+                }
+
+                :deep(.q-field__control:hover) {
+                    box-shadow: 0 4px 12px rgba($primary, 0.15);
+                }
+
+                :deep(.q-field--focused .q-field__control) {
+                    box-shadow: 0 0 0 2px rgba($primary, 0.2);
+                    transform: scale(1.01);
+                }
+
+                :deep(.q-field__marginal) {
+                    transition: all 0.3s ease;
+                }
+
+                // Улучшенные фокус-стили для доступности // TODO: Проверить
+                :deep(.q-field--focused .q-field__control) {
+
+                    outline: 2px solid rgba($primary, 0.3);
+                    outline-offset: 2px;
+                }
+
+                // Стилизация ошибок валидации
+                :deep(.q-field--error) {
+                    // .q-field__control {
+                    //     border-color: $negative !important;
+                    //     box-shadow: 0 0 0 2px rgba($negative, 0.2) !important;
+                    //     animation: shake 0.4s ease-in-out;
+                    // }
+
+                    // .q-field__messages {
+                    //     color: $negative;
+                    //     font-weight: 500;
+                    //     animation: fadeInUp 0.3s ease-out;
+                    // }
+
+                    // .q-field__prepend .q-icon {
+                    //     color: $negative !important;
+                    // }
+                }
+            }
+
+            .login-button {
+                border-radius: $form-element-radius;
+                font-weight: 600;
+                font-size: 16px;
+                // padding: 16px 0;
+                position: relative;
+                overflow: hidden;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                background: linear-gradient(135deg,
+                        $primary 0%,
+                        darken($primary, 5%) 100%);
+
+                &:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 10px 25px rgba($primary, 0.4);
+                }
+
+                &:active {
+                    transform: translateY(0);
+                }
+
+                &::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: -100%;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg,
+                            transparent,
+                            rgba(255, 255, 255, 0.2),
+                            transparent);
+                    transition: left 0.5s;
+                }
+
+                &:hover::before {
+                    left: 100%;
+                }
+            }
+
+            // Стили для дополнительных кнопок
+            .secondary-button {
+                transition: all 0.2s ease;
+
+                &:hover {
+                    transform: translateY(-1px);
+                }
+            }
+
+            // Кастомный разделитель
+            .custom-separator {
+                display: flex;
+                align-items: center;
+                text-align: center;
+
+                &::before,
+                &::after {
+                    content: '';
+                    flex: 1;
+                    height: 1px;
+                    background-color: $grey-4;
+                }
+
+                .separator-text {
+                    padding: 0 16px;
+                    white-space: nowrap;
+                }
+            }
+        }
+    }
+
 }
 
 // Декоративные элементы фона
@@ -238,123 +428,7 @@ const loginWithGoogle = () => {
     }
 }
 
-.login-container {
-    width: 100%;
-    max-width: 420px;
-    padding: 24px;
-    z-index: 10;
-    position: relative;
-}
 
-.login-logo {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    transition: all 0.3s ease;
-
-    &:hover {
-        transform: scale(1.05);
-        background: rgba(255, 255, 255, 0.2);
-    }
-}
-
-.login-title {
-    background: linear-gradient(135deg,
-            rgba(255, 255, 255, 1) 0%,
-            rgba(255, 255, 255, 0.8) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-family: 'Roboto', sans-serif;
-}
-
-.login-subtitle {
-    opacity: 0.95;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.login-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 24px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow: hidden;
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    }
-}
-
-.login-input {
-    transition: all 0.3s ease;
-
-    :deep(.q-field__control) {
-        border-radius: 12px;
-        transition: all 0.3s ease;
-    }
-
-    :deep(.q-field__control:hover) {
-        box-shadow: 0 4px 12px rgba($primary, 0.15);
-    }
-
-    :deep(.q-field--focused .q-field__control) {
-        box-shadow: 0 0 0 2px rgba($primary, 0.2);
-        transform: scale(1.01);
-    }
-
-    :deep(.q-field__marginal) {
-        transition: all 0.3s ease;
-    }
-}
-
-.login-button {
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 16px;
-    padding: 16px 0;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: linear-gradient(135deg,
-            $primary 0%,
-            darken($primary, 5%) 100%);
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba($primary, 0.4);
-    }
-
-    &:active {
-        transform: translateY(0);
-    }
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg,
-                transparent,
-                rgba(255, 255, 255, 0.2),
-                transparent);
-        transition: left 0.5s;
-    }
-
-    &:hover::before {
-        left: 100%;
-    }
-}
 
 // Responsive дизайн
 @media (max-width: 600px) {
@@ -373,10 +447,7 @@ const loginWithGoogle = () => {
     }
 }
 
-// Анимация появления
-.login-card {
-    animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
+
 
 @keyframes slideUp {
     0% {
@@ -390,30 +461,7 @@ const loginWithGoogle = () => {
     }
 }
 
-// Улучшенные фокус-стили для доступности
-.login-input:deep(.q-field--focused .q-field__control) {
-    outline: 2px solid rgba($primary, 0.3);
-    outline-offset: 2px;
-}
 
-// Стилизация ошибок валидации
-.login-input:deep(.q-field--error) {
-    .q-field__control {
-        border-color: $negative !important;
-        box-shadow: 0 0 0 2px rgba($negative, 0.2) !important;
-        animation: shake 0.4s ease-in-out;
-    }
-
-    .q-field__messages {
-        color: $negative;
-        font-weight: 500;
-        animation: fadeInUp 0.3s ease-out;
-    }
-
-    .q-field__prepend .q-icon {
-        color: $negative !important;
-    }
-}
 
 @keyframes shake {
 
@@ -503,20 +551,12 @@ const loginWithGoogle = () => {
     }
 }
 
-// Стили для дополнительных кнопок
-.secondary-button {
-    font-weight: 500;
-    transition: all 0.2s ease;
 
-    &:hover {
-        transform: translateY(-1px);
-    }
-}
 
 // Стили для социальных кнопок
 .social-button {
-    width: 56px;
-    height: 56px;
+    width: 58px;
+    height: 58px;
     background: white;
     border: 1px solid #e0e0e0;
     transition: all 0.3s ease;
@@ -528,39 +568,23 @@ const loginWithGoogle = () => {
 
     &.social-yandex {
         &:hover {
-            border-color: #ffcc00;
+            border-color: $red-10;
             background: #fffbf0;
         }
     }
 
     &.social-vk {
         &:hover {
-            border-color: #4680c2;
+            border-color: $blue-10;
             background: #f0f7ff;
         }
     }
 
     &.social-google {
         &:hover {
-            border-color: #ea4335;
+            border-color: $light-blue-8;
             background: #fff5f4;
         }
-    }
-}
-
-.social-icon {
-    font-weight: bold;
-    font-size: 18px;
-
-    &.yandex-icon {
-        color: #ff3333;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    }
-
-    &.vk-icon {
-        color: #4680c2;
-        font-size: 14px;
-        font-weight: 600;
     }
 }
 </style>
