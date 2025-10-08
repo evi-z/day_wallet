@@ -1,6 +1,6 @@
 <template>
     <q-page class="fit page-container">
-        <InnerLoading :showing="state.loading" label="Загрузка..." />
+        <InnerLoading :showing="state.loading" />
         <q-toolbar class="page-toolbar bg-grey-4 no-padding" v-if="!state.loading">
             <q-tabs dense class="tabs-toolbar" v-model="state.currentTab" no-caps>
                 <q-tab v-for="tab in documentTabs" :key="tab._id" :name="tab._id" :label="tab.name">

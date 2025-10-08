@@ -1,5 +1,5 @@
 <template>
-    <q-td :key="tdKey" :props="tdProps" :class="{ 'no-padding': cellType === TableCellType.input }">
+    <q-td :key="tdKey" :props="tdProps" :class="cellClasses">
         <CellCurrencyInputBody v-if="cellType === TableCellType.input" :format-type="cellFormat" v-model="value"
             :align-content="alignContent" />
         <CellSpanBody v-else-if="cellType === TableCellType.text" :format-type="cellFormat" :value="value"
@@ -12,6 +12,7 @@ import { QTableSlots } from 'quasar';
 import { TableCellFormatType, TableCellFormatTypeMap, TableCellTypeMap, TableCellType, TableCellAlign } from './models';
 import CellCurrencyInputBody from './CellCurrencyInputBody.vue';
 import CellSpanBody from './CellSpanBody.vue';
+import { computed, CSSProperties } from 'vue';
 
 interface Props {
     tdKey: string,
@@ -31,6 +32,18 @@ const {
 
 const value = defineModel<any>({ required: true })
 
+const cellClasses = computed(() => {
+    return {
+        'cell-input': cellType === TableCellType.input
+    }
+})
+
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.cell-input {
+    padding: 0 !important;
+    // border-bottom: none !important;
+}
+
+</style>

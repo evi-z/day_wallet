@@ -1,7 +1,7 @@
 import { AppUser } from "src/models/user"
-import { AppDatabaseService } from "../database/app_db"
-import { UserDatabaseService } from "../database/user_db"
-import { initPouchDB } from "../database/base"
+import { AppDatabaseService } from "src/services/database/service_cls/app_db"
+import { UserDatabaseService } from "src/services/database/service_cls/user_db"
+import { initPouchDB } from "../database/service_cls/base"
 
 class AppService {
     public static _instance?: AppService

@@ -99,21 +99,22 @@
 
 <script setup lang="ts">
 import {
-    PeriodDocCalendarDataColumns, PeriodDocInitAndCurrentDataColumns, PeriodDocCurrentDataRows, PeriodDocInitDataRows, PeriodDocCalendarColumn,
+    PeriodDocCalendarDataColumns,
+    PeriodDocInitAndCurrentDataColumns,
+    PeriodDocCurrentDataRows,
+    PeriodDocInitDataRows,
+    PeriodDocCalendarColumn,
     PeriodDocInitCalcRowValues,
     PeriodDocCurrentRowValues,
     PeriodDocCalendarRow,
-    DefaultPeriodDocumentMainValues,
 } from './models';
-import { onMounted, ref, shallowRef, computed, nextTick, triggerRef } from 'vue';
-import { PeriodDocumentCalendarFactValuesDBData, PeriodDocumentDBData, PeriodDocumentMainValuesData, PeriodDocumentMainValuesDBData } from 'src/models/database';
+import { onMounted, ref, shallowRef, computed, triggerRef } from 'vue';
+import { PeriodDocumentDBData, PeriodDocumentMainValuesData } from 'src/models/database';
 import { AppDate } from 'src/utils/date';
 import { getPeriodDocumentCalendarDataRows } from './funs';
-import app from 'src/services/app';
-import { debounceFilter, EventFilter, watchPausable, watchWithFilter } from '@vueuse/core';
 import { PeriodDocInitDataFields, PeriodDocInitDataFieldsMap } from 'src/models/period_doc';
 import TableCell from 'src/components/TableCell/index.vue';
-import { useDocumentMainValuesRef } from './sevice';
+import { useDocumentCalendarFactValuesRef, useDocumentMainValuesRef } from 'src/services/database/wrappers/period_docs';
 
 const initCurrentPagination = ref({ rowsPerPage: 0 })
 
@@ -129,61 +130,21 @@ const aToDate = computed(() => AppDate.fromFriendlyFormat(document.to_date))
 const calendarRows = shallowRef<PeriodDocCalendarRow[]>([])  // Строки календаря
 const currentDate = ref<AppDate>()  // Текущая дата
 
-const calendarFactDBValues = ref<PeriodDocumentCalendarFactValuesDBData>({} as PeriodDocumentCalendarFactValuesDBData)  // Факты календаря
-const documentMainDBValues = ref<PeriodDocumentMainValuesDBData>({} as PeriodDocumentMainValuesDBData)  // Основные значения документа
-const documentMainDBValuesTS = useDocumentMainValuesRef(document)  // Основные значения документа
+const documentMainDBValues = useDocumentMainValuesRef(document)  // Основные значения документа
+const calendarFactDBValues = useDocumentCalendarFactValuesRef(document)  // Факты календаря
 
 const initDataCalcValues = ref<PeriodDocInitCalcRowValues>({} as PeriodDocInitCalcRowValues)  // Калькулируемые исходные данные
 const currentDataCalcValues = ref<PeriodDocCurrentRowValues>({} as PeriodDocCurrentRowValues)  // Текущие данные
 
-/** Сохранение основных значений документа в БД (с обновлением ревизии) */
-const updateMainValuesInDB = async () => {
-    // console.log('UPD Before Main Values', documentMainDBValues.value._rev)
-    return app.userDb!.setPeriodDocumentMainValues(document._id, documentMainDBValues.value).then(async res => {
-        await updateDocumentMainValuesWithoutWatcher(async () => {
-            documentMainDBValues.value._rev = res.rev
-            // console.log('UPD Main Values', documentMainDBValues.value._rev)
-        })
-    })
-}
-
-/** Сохранение значений фактов календаря в БД (с обновлением ревизии) */
-const updateCalendarFactValuesInDB = async () => {
-    // console.log('UPD Before Fact Values', calendarFactDBValues.value._rev)
-    return app.userDb!.setPeriodDocumentCalendarFactValues(document._id, calendarFactDBValues.value).then(async res => {
-
-        await updateCalendarFactValuesWithoutWatcher(async () => {
-            calendarFactDBValues.value._rev = res.rev
-            // console.log('UPD Fact Values', calendarFactDBValues.value._rev)
-        })
-    })
-}
-
-/** Наблюдатель за значениями "Общий бюджет" и "План на выходные" */
-const initDataMainValuesWatcher = watchPausable(() => [
-    documentMainDBValues.value.total_budget, documentMainDBValues.value.weekend_plan
-], async ([totalBudget, weekendPlan]) => {
-    await nextTick()
+/** Слежение за основными значениями документа */
+documentMainDBValues.bindValuesWatcherCallback(async (values) => {
     await recalcDocumentCalcValues(false)  // Пересчёт калькулируемых данных
-    // Сохранение основных значений документа в БД (TODO: Сделать частичное обновление)
-    await updateMainValuesInDB()
 })
 
-const calendarFactDataValuesWatcher = watchPausable(calendarFactDBValues, async (val) => {
-    await nextTick()
+/** Слежение за значениями фактов календаря */
+calendarFactDBValues.bindValuesWatcherCallback(async (values) => {
     await recalcCalendarPlansAndCurrentData()
-    // Сохранение значений фактов календаря в БД (TODO: Сделать частичное обновление)
-    await updateCalendarFactValuesInDB()
-}, { deep: true })
-
-/** Наблюдатель за значениями фактов календаря */
-// const calendarFactDataValuesWatcher = watchPausable(calendarFactDBValues, async (val) => {
-//     // console.log('calendarFactDataValuesWatcher')
-//     await nextTick()
-//     await recalcCalendarPlansAndCurrentData()
-//     // Сохранение значений фактов календаря в БД (TODO: Сделать частичное обновление)
-//     await updateCalendarFactValuesInDB()
-// }, { deep: true })
+})
 
 /** Получение модели значения исходных данных */
 const initDataModel = computed(() => {
@@ -207,66 +168,11 @@ onMounted(async () => {
     await initDocument()
 })
 
-/** Установка основных значений документа без запуска наблюдателей */
-const updateDocumentMainValuesWithoutWatcher = async (fn: () => Promise<void>) => {
-    initDataMainValuesWatcher.pause()
-    await nextTick()
-    await fn()
-    await nextTick()
-    initDataMainValuesWatcher.resume()
-}
-
-/** Получение основных значений документа из БД */
-const initDocumentMainValuesFromDB = async () => {
-    let mainValues = await app.userDb!.fetchPeriodDocumentMainValues(document._id)
-    if (!mainValues) {  // Если нет основных значений, то создаём их
-        await app.userDb!.setPeriodDocumentMainValues(document._id, DefaultPeriodDocumentMainValues).then(async res => {
-            mainValues = await app.userDb!.getByIdOrNull<PeriodDocumentMainValuesDBData>(res.id)
-        })
-    }
-
-    await updateDocumentMainValuesWithoutWatcher(async () => {
-        documentMainDBValues.value = mainValues!
-        // console.log('INIT Main Values', documentMainDBValues.value._rev)
-    })
-}
-
-/** Обновление основных значений документа без запуска наблюдателей */
-const updateCalendarFactValuesWithoutWatcher = async (fn: () => Promise<void>) => {
-    calendarFactDataValuesWatcher.pause()
-    await nextTick()
-    await fn()
-    await nextTick()
-    calendarFactDataValuesWatcher.resume()
-}
-
-/** Получение значений фактов календаря из БД */
-const initDocumentCalendarFactValuesFromDB = async () => {
-    let calendarFactVal = await app.userDb!.fetchPeriodDocumentCalendarFactValues(document._id)
-
-    if (!calendarFactVal) {  // Если нет значений фактов календаря, то создаём их (пустыми, для инициализации id в БД)
-        await app.userDb!.setPeriodDocumentCalendarFactValues(document._id, {}).then(async res => {
-            calendarFactVal = await app.userDb!.getByIdOrNull<PeriodDocumentCalendarFactValuesDBData>(res.id)
-        })
-    }
-
-    await updateCalendarFactValuesWithoutWatcher(async () => {
-        calendarFactDBValues.value = calendarFactVal!
-        // console.log('INIT Fact Values', calendarFactDBValues.value._rev)
-    })
-}
-
 /** Инициализация данных документа */
 const initDocument = async () => {
+    await documentMainDBValues.initFromDB()
+    await calendarFactDBValues.initFromDB()
 
-    await documentMainDBValuesTS.init()
-    // await documentMainDBValuesTS.save()
-    // documentMainDBValuesTS.value.total_budget = 2222
-    documentMainDBValuesTS.value._rev = '2222'
-
-
-    await initDocumentMainValuesFromDB()  // Инициализация основных значений документа из БД
-    await initDocumentCalendarFactValuesFromDB()  // Инициализация значений фактов календаря из БД
     await initDocumentCalcValues()  // Инициализация калькулируемых исходных данных
 }
 
@@ -280,7 +186,7 @@ const initDocumentCalcValues = async () => {
 
 
     calendarRows.value = getPeriodDocumentCalendarDataRows(document)  // Инициализация строк календаря
-    await updateCalendarFactValuesWithoutWatcher(async () => {
+    calendarFactDBValues.ignoreValuesUpdates(() => {
         calendarRows.value.forEach(row => {  // Инициализируем факты календаря пустыми значениями (если не заданы)
             if (!Number.isInteger(calendarFactDBValues.value[row.date.friendly])) calendarFactDBValues.value[row.date.friendly] = 0
         })
