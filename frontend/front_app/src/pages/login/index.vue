@@ -17,49 +17,85 @@
                             Day Wallet
                         </div>
                         <div class="login-subtitle text-white text-weight-light text-subtitle1 q-mt-xs">
-                            Добро пожаловать
+                            {{ welcomeText }}
                         </div>
                     </div>
 
                     <q-card class="login-card shadow-24" flat>
-                        <q-card-section class="q-pa-xl">
+                        <q-card-section class="q-pa-xl relative-position">
+                            <div class="arrow-back-btn" v-if="isRegisterMode" @click="switchToLoginForm">
+                                <q-btn flat round size="md" icon="sym_o_arrow_back" color="grey-7" tabindex="-1" />
+                            </div>
                             <div class="text-center q-mb-xl">
                                 <div class="text-grey-9 text-h5">
-                                    Вход в систему
+                                    {{ formTitle }}
                                 </div>
                             </div>
 
-                            <q-form @submit.prevent="login" class="q-gutter-md">
-                                <q-input outlined v-model="loginForm.username" label="Номер или почта" color="primary"
-                                    label-color="grey-7" class="login-input" autocomplete="username" spellcheck="false"
-                                    :error="state.hasSubmitted && (!loginForm.username || loginForm.username.length === 0)"
-                                    :error-message="state.hasSubmitted && (!loginForm.username || loginForm.username.length === 0) ? 'Поле обязательно для заполнения' : ''"
-                                    hide-bottom-space>
-                                    <template #prepend>
-                                        <q-icon name="person_outline" color="primary"></q-icon>
-                                    </template>
-                                </q-input>
+                            <q-form @submit.prevent="submitForm" ref="formRef">
+                                <div class="form-fields-container q-gutter-y-md">
+                                    <!-- Поля для регистрации: полное имя -->
+                                    <transition name="form-field" mode="out-in">
+                                        <q-input v-if="isRegisterMode" outlined v-model="(form as RegisterForm).name"
+                                            label="Имя" color="primary" autofocus label-color="grey-7"
+                                            class="login-input" spellcheck="false" @keyup.enter="submitForm"
+                                            :rules="[reqRule('Введите ваше имя')]" hide-bottom-space
+                                            lazy-rules='ondemand' key="fullname-field">
+                                            <template #prepend>
+                                                <q-icon name="sym_o_person" color="primary"></q-icon>
+                                            </template>
+                                        </q-input>
+                                    </transition>
+                                    <q-input outlined v-model="form.email" label="Email" color="primary"
+                                        :autofocus="isLoginMode" label-color="grey-7" class="login-input"
+                                        autocomplete="email" spellcheck="false" @keyup.enter="submitForm"
+                                        :rules="[reqRule('Введите почтовый адрес')]" hide-bottom-space
+                                        lazy-rules='ondemand'>
+                                        <template #prepend>
+                                            <q-icon name="sym_o_mail" color="primary"></q-icon>
+                                        </template>
+                                    </q-input>
 
-                                <q-input outlined v-model="loginForm.password"
-                                    :type="state.passwordVisible ? 'text' : 'password'" label="Пароль" color="primary"
-                                    label-color="grey-7" class="login-input" autocomplete="current-password"
-                                    :error="state.hasSubmitted && (!loginForm.password || loginForm.password.length === 0)"
-                                    :error-message="state.hasSubmitted && (!loginForm.password || loginForm.password.length === 0) ? 'Поле обязательно для заполнения' : ''"
-                                    hide-bottom-space>
-                                    <template #prepend>
-                                        <q-icon name="lock_outline" color="primary"></q-icon>
-                                    </template>
-                                    <template #append>
-                                        <q-btn dense flat round size="sm"
-                                            :icon="state.passwordVisible ? 'visibility' : 'visibility_off'"
-                                            color="grey-6" @click="state.passwordVisible = !state.passwordVisible"
-                                            :aria-label="state.passwordVisible ? 'Скрыть пароль' : 'Показать пароль'" />
-                                    </template>
-                                </q-input>
+                                    <!-- Поле пароля -->
+                                    <q-input outlined v-model="form.password"
+                                        :type="state.passwordVisible ? 'text' : 'password'" label="Пароль"
+                                        color="primary" label-color="grey-7" class="login-input"
+                                        :autocomplete="isLoginMode ? 'current-password' : 'new-password'"
+                                        spellcheck="false" @keyup.enter="submitForm"
+                                        :rules="isLoginMode ? [reqRule('Введите пароль')] : [reqRule('Введите пароль'), passwordRule]"
+                                        hide-bottom-space lazy-rules='ondemand'>
+                                        <template #prepend>
+                                            <q-icon name="sym_o_lock" color="primary"></q-icon>
+                                        </template>
+                                        <template #append>
+                                            <q-btn dense flat round size="sm" tabindex="-1"
+                                                :icon="state.passwordVisible ? 'visibility' : 'visibility_off'"
+                                                color="grey-6" @click="state.passwordVisible = !state.passwordVisible"
+                                                :aria-label="state.passwordVisible ? 'Скрыть пароль' : 'Показать пароль'" />
+                                        </template>
+                                    </q-input>
+
+                                    <!-- Поле подтверждения пароля (только для регистрации) -->
+                                    <transition name="form-field" mode="out-in">
+                                        <q-input v-if="isRegisterMode" outlined
+                                            v-model="(form as RegisterForm).confirm_password"
+                                            :type="state.passwordVisible ? 'text' : 'password'"
+                                            label="Подтвердите пароль" color="primary" label-color="grey-7"
+                                            class="login-input" autocomplete="new-password" spellcheck="false"
+                                            @keyup.enter="submitForm"
+                                            :rules="[confirmPasswordRule]" hide-bottom-space
+                                            key="confirm-password-field">
+                                            <template #prepend>
+                                                <q-icon name="sym_o_lock" color="primary"></q-icon>
+                                            </template>
+                                        </q-input>
+                                    </transition>
+                                </div>
 
                                 <div class="q-mt-lg">
-                                    <q-btn color="primary" class="full-width login-button" type="submit" label="Войти"
-                                        no-caps unelevated size="lg" :loading="state.isLoading">
+                                    <q-btn color="primary" class="full-width login-button" type="submit"
+                                        :label="submitBtnText" no-caps unelevated size="lg"
+                                        :loading="state.submitBtnLoading" :disabled="!isFormFilled">
                                         <template #loading>
                                             <q-spinner-oval />
                                         </template>
@@ -68,15 +104,14 @@
                             </q-form>
 
                             <!-- Дополнительные опции -->
-                            <div class="text-center q-mt-md">
+                            <div class="text-center q-mt-md" v-if="isLoginMode">
                                 <div class="column q-y-gutter-xs justify-center">
                                     <q-btn flat no-caps dense label="Зарегистрироваться" color="primary"
-                                        class="secondary-button" @click="clickRegisterBtn" />
+                                        class="secondary-button" @click="switchToRegisterForm" />
                                     <q-btn flat no-caps dense label="Оффлайн режим" color="deep-orange-8"
                                         class="secondary-button" @click="clickLocalModeBtn" />
-                                    <q-btn  flat no-caps dense label="Забыли пароль?" color="grey-7"
+                                    <q-btn flat no-caps dense label="Забыли пароль?" color="grey-7"
                                         class="secondary-button text-sm" @click="$router.push('/forgot-password')" />
-
                                 </div>
                             </div>
 
@@ -90,15 +125,15 @@
                             <!-- Социальные входы -->
                             <div class="text-center">
                                 <div class="row q-gutter-x-sm justify-center">
-                                    <q-btn round class="social-button social-yandex" @click="loginWithYandex"
+                                    <q-btn round disable class="social-button social-yandex" @click="loginWithYandex"
                                         aria-label="Войти через Яндекс">
                                         <q-icon name="fa-brands fa-yandex" size="24px" color="red-10" />
                                     </q-btn>
-                                    <q-btn round class="social-button social-vk" @click="loginWithVK"
+                                    <q-btn round disable class="social-button social-vk" @click="loginWithVK"
                                         aria-label="Войти через VK">
                                         <q-icon name="fa-brands fa-vk" size="34px" color="blue-10" />
                                     </q-btn>
-                                    <q-btn round class="social-button social-google" @click="loginWithGoogle"
+                                    <q-btn round disable class="social-button social-google" @click="loginWithGoogle"
                                         aria-label="Войти через Google">
                                         <q-icon name="fa-brands fa-google" size="24px" color="light-blue-8" />
                                     </q-btn>
@@ -113,79 +148,157 @@
 </template>
 
 <script setup lang="ts">
-import { useQuasar } from 'quasar';
+import { QForm, useQuasar } from 'quasar';
 import { PAGES } from 'src/router/models';
-import { reactive, ref } from 'vue';
+import { computed, nextTick, reactive, ref, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
+import { reqRule } from 'src/utils/form-rules';
+import { LoginFormModeMap, LoginFormMode, LoginFormDefault, LoginOrRegisterForm, RegisterForm, RegisterFormDefault } from './models';
 
 const $q = useQuasar();
 const $router = useRouter();
 
+// Основное состояние приложения
 const state = reactive({
+    currentFormMode: LoginFormMode.login as LoginFormModeMap,
     passwordVisible: false,
-    isLoading: false,
-    hasSubmitted: false,
+    submitBtnLoading: false,
 })
 
-const loginForm = ref({
-    username: "",
-    password: "",
-});
+// Форма логина
+const form = ref<LoginOrRegisterForm>({ ...LoginFormDefault })
 
-const login = async () => {
-    state.hasSubmitted = true;
+// Computed свойства для активной формы
+const isLoginMode = computed(() => state.currentFormMode === LoginFormMode.login)
+const isRegisterMode = computed(() => state.currentFormMode === LoginFormMode.register)
 
-    // Проверка валидации
-    if (!loginForm.value.username || loginForm.value.username.length === 0) {
-        return;
-    }
-    if (!loginForm.value.password || loginForm.value.password.length === 0) {
-        return;
-    }
+const isFormFilled = computed(() => Object.values(form.value).every(value => !!value))
 
-    state.isLoading = true;
+const formTitle = computed(() => {
+    return isLoginMode.value ? 'Вход в систему' : 'Регистрация';
+})
 
-    try {
-        // return api.user
-        //     .loginRequest(loginForm.value)
-        //     .then((res) => {
-        //         $store.userStore.setToken(res.token).then(() => $router.go(0));
-        //     })
-        //     .catch((err) => {
-        //         $q.notify({
-        //             type: "warning",
-        //             message: "Неверный логин или пароль",
-        //         });
-        //     });
-    } catch (error) {
-        console.warn('Ошибка авторизации:', error);
-    } finally {
-        state.isLoading = false;
-    }
+const welcomeText = computed(() => {
+    return isLoginMode.value ? 'Добро пожаловать' : 'Создание аккаунта';
+})
+
+const submitBtnText = computed(() => {
+    return isLoginMode.value ? 'Войти' : 'Зарегистрироваться';
+})
+
+const formRef = useTemplateRef('formRef');
+
+const passwordRule = (val: string) => {
+    if (val.length < 4) return 'Пароль должен содержать минимум 4 символов';
+
+
+    return true;
 };
 
+const confirmPasswordRule = (val: string) => {
+    if (val !== form.value.password) return 'Пароли не совпадают';
+    return true;
+};
+
+// Основная функция отправки формы
+const submitForm = async () => {
+    if (!isFormFilled.value) return
+
+    return formRef.value?.validate().then(async () => {
+
+        state.submitBtnLoading = true;
+
+        try {
+            if (isLoginMode.value) {
+                await handleLogin();
+            } else {
+                await handleRegister();
+            }
+        } catch (error) {
+            console.warn('Ошибка отправки формы:', error);
+        } finally {
+            state.submitBtnLoading = false;
+        }
+    })
+};
+
+// Обработка логина
+const handleLogin = async () => {
+    // TODO: Реализовать логику входа
+    // return api.user
+    //     .loginRequest(loginForm.value)
+    //     .then((res) => {
+    //         $store.userStore.setToken(res.token).then(() => $router.go(0));
+    //     })
+    //     .catch((err) => {
+    //         $q.notify({
+    //             type: "warning",
+    //             message: "Неверный логин или пароль",
+    //         });
+    //     });
+
+    $q.notify({
+        type: "info",
+        message: "Логин временно недоступен",
+    });
+};
+
+// Обработка регистрации
+const handleRegister = async () => {
+    // TODO: Реализовать логику регистрации
+    // return api.user
+    //     .registerRequest(registerForm.value)
+    //     .then((res) => {
+    //         $q.notify({
+    //             type: "positive",
+    //             message: "Регистрация прошла успешно! Проверьте почту для подтверждения.",
+    //         });
+    //         switchToLogin();
+    //     })
+    //     .catch((err) => {
+    //         $q.notify({
+    //             type: "negative",
+    //             message: "Ошибка при регистрации. Попробуйте снова.",
+    //         });
+    //     });
+
+    $q.notify({
+        type: "positive",
+        message: "Регистрация временно недоступна",
+    });
+};
+
+const switchToLoginForm = async () => {
+    form.value = { ...LoginFormDefault }
+    await nextTick()
+    state.currentFormMode = LoginFormMode.login;
+    state.passwordVisible = false;
+};
+
+const switchToRegisterForm = async () => {
+    form.value = { ...RegisterFormDefault, email: form.value.email }
+    await nextTick()
+    state.currentFormMode = LoginFormMode.register;
+    state.passwordVisible = false;
+};
+
+// Социальные сети (пока заглушки)
 const loginWithYandex = () => {
-    // TODO: Реализовать вход через Яндекс
     console.log('Вход через Яндекс будет реализован позже');
 };
 
 const loginWithVK = () => {
-    // TODO: Реализовать вход через VK
     console.log('Вход через VK будет реализован позже');
 };
 
 const loginWithGoogle = () => {
-    // TODO: Реализовать вход через Google
     console.log('Вход через Google будет реализован позже');
 };
 
-const clickRegisterBtn = () => {
-    $router.push('/register');
-}
-
+// Переход в оффлайн режим
 const clickLocalModeBtn = () => {
     $router.push({ name: PAGES.Index });
-}
+};
 </script>
 
 <style lang="scss" scoped>
@@ -249,58 +362,63 @@ $login-card-background: rgba(255, 255, 255, 0.95);
             border-radius: 24px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
-            animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1); // Анимация появления
+            animation: cardSideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 
-            &:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            &:hover,
+            &:focus-within {
+                transform: scale(1.01);
+            }
+
+            // Анимации для переключения полей формы
+            .form-fields-container {
+                transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            }
+
+            .form-field-enter-active {
+                transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            }
+
+            .form-field-leave-active {
+                transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+                position: absolute;
+                width: 100%;
+            }
+
+            .form-field-enter-from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+
+            .form-field-leave-to {
+                opacity: 0;
+                transform: translateY(-30px) scale(0.9);
+            }
+
+            .arrow-back-btn {
+                position: absolute;
+                top: 8px;
+                left: 8px;
             }
 
             .login-input {
-                transition: all 0.3s ease;
-
                 :deep(.q-field__control) {
                     border-radius: $form-element-radius;
                     transition: all 0.3s ease;
+
+                    &:hover {
+                        // Hover эффект primary цвета при наведении
+                        box-shadow: 0 4px 12px rgba($primary, 0.15);
+                    }
                 }
 
-                :deep(.q-field__control:hover) {
-                    box-shadow: 0 4px 12px rgba($primary, 0.15);
-                }
+                :deep(.q-field__append .q-btn) {
+                    // Hover эффекты для кнопок в append slot-е (e.g. показать/скрыть пароль)
+                    transition: all 0.2s ease;
 
-                :deep(.q-field--focused .q-field__control) {
-                    box-shadow: 0 0 0 2px rgba($primary, 0.2);
-                    transform: scale(1.01);
-                }
-
-                :deep(.q-field__marginal) {
-                    transition: all 0.3s ease;
-                }
-
-                // Улучшенные фокус-стили для доступности // TODO: Проверить
-                :deep(.q-field--focused .q-field__control) {
-
-                    outline: 2px solid rgba($primary, 0.3);
-                    outline-offset: 2px;
-                }
-
-                // Стилизация ошибок валидации
-                :deep(.q-field--error) {
-                    // .q-field__control {
-                    //     border-color: $negative !important;
-                    //     box-shadow: 0 0 0 2px rgba($negative, 0.2) !important;
-                    //     animation: shake 0.4s ease-in-out;
-                    // }
-
-                    // .q-field__messages {
-                    //     color: $negative;
-                    //     font-weight: 500;
-                    //     animation: fadeInUp 0.3s ease-out;
-                    // }
-
-                    // .q-field__prepend .q-icon {
-                    //     color: $negative !important;
-                    // }
+                    &:hover {
+                        background-color: rgba($primary, 0.1);
+                        transform: scale(1.1);
+                    }
                 }
             }
 
@@ -319,6 +437,10 @@ $login-card-background: rgba(255, 255, 255, 0.95);
                 &:hover {
                     transform: translateY(-2px);
                     box-shadow: 0 10px 25px rgba($primary, 0.4);
+
+                    &::before {
+                        left: 100%;
+                    }
                 }
 
                 &:active {
@@ -339,8 +461,20 @@ $login-card-background: rgba(255, 255, 255, 0.95);
                     transition: left 0.5s;
                 }
 
-                &:hover::before {
-                    left: 100%;
+                // Стили для disabled состояния
+                &:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+
+                    &:hover {
+                        transform: none !important;
+                        box-shadow: none !important;
+                    }
+                }
+
+                :deep(.q-spinner) {
+                    // Анимация спиннера при loading
+                    animation: buttonSpin 1s linear infinite;
                 }
             }
 
@@ -370,6 +504,40 @@ $login-card-background: rgba(255, 255, 255, 0.95);
                 .separator-text {
                     padding: 0 16px;
                     white-space: nowrap;
+                }
+            }
+
+            .social-button {
+                width: 58px;
+                height: 58px;
+                background: white;
+                border: 1px solid #e0e0e0;
+                transition: all 0.3s ease;
+
+                &:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                }
+
+                &.social-yandex {
+                    &:hover {
+                        border-color: $red-10;
+                        background: #fffbf0;
+                    }
+                }
+
+                &.social-vk {
+                    &:hover {
+                        border-color: $blue-10;
+                        background: #f0f7ff;
+                    }
+                }
+
+                &.social-google {
+                    &:hover {
+                        border-color: $light-blue-8;
+                        background: #fff5f4;
+                    }
                 }
             }
         }
@@ -428,7 +596,15 @@ $login-card-background: rgba(255, 255, 255, 0.95);
     }
 }
 
+@keyframes buttonSpin {
+    0% {
+        transform: rotate(0deg);
+    }
 
+    100% {
+        transform: rotate(360deg);
+    }
+}
 
 // Responsive дизайн
 @media (max-width: 600px) {
@@ -447,9 +623,7 @@ $login-card-background: rgba(255, 255, 255, 0.95);
     }
 }
 
-
-
-@keyframes slideUp {
+@keyframes cardSideUp {
     0% {
         opacity: 0;
         transform: translateY(30px);
@@ -458,72 +632,6 @@ $login-card-background: rgba(255, 255, 255, 0.95);
     100% {
         opacity: 1;
         transform: translateY(0);
-    }
-}
-
-
-
-@keyframes shake {
-
-    0%,
-    100% {
-        transform: translateX(0);
-    }
-
-    25% {
-        transform: translateX(-4px);
-    }
-
-    75% {
-        transform: translateX(4px);
-    }
-}
-
-@keyframes fadeInUp {
-    0% {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-// Улучшенные hover эффекты для кнопки показать/скрыть пароль
-.login-input:deep(.q-field__append .q-btn) {
-    transition: all 0.2s ease;
-
-    &:hover {
-        background-color: rgba($primary, 0.1);
-        transform: scale(1.1);
-    }
-}
-
-// Улучшенная анимация загрузки
-.login-button:deep(.q-spinner) {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-// Стили для disabled состояния
-.login-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-
-    &:hover {
-        transform: none !important;
-        box-shadow: none !important;
     }
 }
 
@@ -548,43 +656,6 @@ $login-card-background: rgba(255, 255, 255, 0.95);
     .login-button {
         border-radius: 10px;
         font-size: 15px;
-    }
-}
-
-
-
-// Стили для социальных кнопок
-.social-button {
-    width: 58px;
-    height: 58px;
-    background: white;
-    border: 1px solid #e0e0e0;
-    transition: all 0.3s ease;
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    &.social-yandex {
-        &:hover {
-            border-color: $red-10;
-            background: #fffbf0;
-        }
-    }
-
-    &.social-vk {
-        &:hover {
-            border-color: $blue-10;
-            background: #f0f7ff;
-        }
-    }
-
-    &.social-google {
-        &:hover {
-            border-color: $light-blue-8;
-            background: #fff5f4;
-        }
     }
 }
 </style>

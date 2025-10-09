@@ -20,7 +20,6 @@
                 </q-btn>
             </q-tabs>
         </q-toolbar>
-
         <q-tab-panels v-model="state.currentTab" class="page-tab-panels fit">
             <q-tab-panel name="init">
                 <InitBody @created="fetchPeriodDocuments" />
@@ -40,6 +39,7 @@ import { onMounted, reactive, ref } from 'vue';
 import InnerLoading from 'src/components/InnerLoading/index.vue';
 import app from 'src/services/app';
 import { PeriodDocumentDBData } from 'src/models/database';
+import { APP_MODE } from 'src/services/app/models';
 
 const state = reactive({
     loading: true,
@@ -63,7 +63,7 @@ const fetchPeriodDocuments = async (selectTabId?: string) => {
         }
 
         documentTabs.value = res
-        console.log('🔍 Period tabs:', documentTabs.value)
+        // console.log('🔍 Period tabs:', documentTabs.value)
 
         openCalendarTab(selectTabId || res[0]!._id!)
     }).finally(() => {
@@ -72,7 +72,6 @@ const fetchPeriodDocuments = async (selectTabId?: string) => {
 }
 
 onMounted(async () => {
-    console.log('🔍 IndexPage mounted')
     await fetchPeriodDocuments()
 })
 
@@ -84,6 +83,7 @@ const handleDelete = async (id: string) => {
 const handleAddPeriod = () => {
     state.currentTab = 'init'
 }
+
 
 </script>
 

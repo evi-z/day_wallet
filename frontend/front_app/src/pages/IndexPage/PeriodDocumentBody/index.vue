@@ -241,10 +241,9 @@ const recalcCalendarPlansAndCurrentData = async () => {
     /** Заполенение плана до текущей даты */
     for (let i = 1; i < calendarRows.value.length; i++) {
         const row = calendarRows.value[i]!
-
-        // Будни после текущей даты - план последнего рассчитанного дня
-        if (row.date.isAfter(currentDate.value!)) {
-            row.plan = lastCalcPlan
+        if (row.date.isAfter(currentDate.value!)) {  // День после текущей даты
+            // В выходные - план выходного дня, в будни - последний рассчитанный план
+            row.plan = row.date.isWeekend() ? documentMainDBValues.value.weekend_plan : lastCalcPlan
             continue
         }
 
@@ -252,7 +251,7 @@ const recalcCalendarPlansAndCurrentData = async () => {
         const remainingWeekdays = countRemainingDays(i, false)  // Осталось будних дней
         const spentSoFar = sumFact(i)  // Потрачено до текущей даты
 
-        // Рассчитываем план на сегодня
+        // Рассчитываем план на сегодня (в том числе для выходных - для корректного расчёта последнего плана)
         lastCalcPlan = remainingWeekends > 0 ? Math.round(
             // (Изначальный план - потрачено всего до сегодня - план на оставшиеся выходные) / оставшиеся будни
             (documentMainDBValues.value.total_budget - spentSoFar - (remainingWeekends * documentMainDBValues.value.weekend_plan)) / remainingWeekdays

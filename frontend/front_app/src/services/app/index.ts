@@ -2,6 +2,9 @@ import { AppUser } from "src/models/user"
 import { AppDatabaseService } from "src/services/database/service_cls/app_db"
 import { UserDatabaseService } from "src/services/database/service_cls/user_db"
 import { initPouchDB } from "../database/service_cls/base"
+import { APP_MODE, AppState, useAppState } from "./models"
+
+
 
 class AppService {
     public static _instance?: AppService
@@ -10,7 +13,11 @@ class AppService {
     user: AppUser | null = null
     userDb?: UserDatabaseService
 
-    private constructor() {}
+    state: AppState
+
+    private constructor() {
+        this.state = useAppState()
+    }
 
     public static get Instance() {
         return this._instance || (this._instance = new this())
@@ -27,8 +34,9 @@ class AppService {
             throw error
         }
 
+        this.state.mode = this.user ? APP_MODE.remote : APP_MODE.local
         console.log('🙎‍♂️ ' + (
-            this.isLocalUser ? 'Local user initialized' : `User initialized (id: ${this.user?.id})`
+            this.state.mode === APP_MODE.local ? 'Local user initialized' : `User initialized (id: ${this.user?.id})`
         ))
     }
 
@@ -38,8 +46,14 @@ class AppService {
         await this._initUserAndUserDb()
     }
 
-    get isLocalUser() {
-        return this.user === null
+    async login() {
+        // TODO: Login to remote server
+        this.state.mode = APP_MODE.remote
+    }
+
+    async logout() {
+        // TODO: Logout from remote server
+        this.state.mode = APP_MODE.local
     }
 }
 

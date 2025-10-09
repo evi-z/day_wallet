@@ -87,25 +87,16 @@ export default defineConfig((/* ctx */) => {
 
             // iconSet: 'material-icons', // Quasar icon set
             // Quasar plugins
-            plugins: []
+            plugins: [
+                'Notify'
+            ]
         },
 
         // animations: 'all', // --- includes all animations
         // https://v2.quasar.dev/options/animations
-        animations: [],
-
-        // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#sourcefiles
-        // sourceFiles: {
-        //   rootComponent: 'src/App.vue',
-        //   router: 'src/router/index',
-        //   store: 'src/store/index',
-        //   pwaRegisterServiceWorker: 'src-pwa/register-service-worker',
-        //   pwaServiceWorker: 'src-pwa/custom-service-worker',
-        //   pwaManifestFile: 'src-pwa/manifest.json',
-        //   electronMain: 'src-electron/electron-main',
-        //   electronPreload: 'src-electron/electron-preload'
-        //   bexManifestFile: 'src-bex/manifest.json
-        // },
+        animations: [
+            'fadeInUp'
+        ],
 
         // https://v2.quasar.dev/quasar-cli-vite/developing-ssr/configuring-ssr
         ssr: {
