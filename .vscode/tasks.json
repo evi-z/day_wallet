@@ -4,7 +4,7 @@
     {
       "label": "Run Backend",
       "type": "shell",
-      "command": "uv run manage.py runserver",
+      "command": "uv run granian --reload backend_app.asgi:application",
       "group": "build",
       "problemMatcher": [],
       "options": {

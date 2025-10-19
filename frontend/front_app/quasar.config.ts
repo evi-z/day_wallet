@@ -2,24 +2,17 @@
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file
 
 import { defineConfig } from '#q-app/wrappers';
+import envVariables from "./envs/env_parser";
 
 export default defineConfig((/* ctx */) => {
     return {
-        // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
-        // preFetch: true,
-
-        // app boot file (/src/boot)
-        // --> boot files are part of "main.js"
-        // https://v2.quasar.dev/quasar-cli-vite/boot-files
         boot: [
             'axios',
             'init_app'
         ],
 
-        // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#css
-        css: [
-            'app.scss'
-        ],
+        css: ['app.scss'],
+        envFiles: envVariables(),
 
         // https://github.com/quasarframework/quasar/tree/dev/extras
         extras: [
@@ -46,15 +39,9 @@ export default defineConfig((/* ctx */) => {
             typescript: {
                 strict: true,
                 vueShim: true
-                // extendTsConfig (tsConfig) {}
             },
 
             vueRouterMode: 'hash', // available values: 'hash', 'history'
-            // vueRouterBase,
-            // vueDevtools,
-            // vueOptionsAPI: false,
-
-            // rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
 
             // publicPath: '/',
             // analyze: true,
@@ -94,9 +81,7 @@ export default defineConfig((/* ctx */) => {
 
         // animations: 'all', // --- includes all animations
         // https://v2.quasar.dev/options/animations
-        animations: [
-            'fadeInUp'
-        ],
+        animations: [],
 
         // https://v2.quasar.dev/quasar-cli-vite/developing-ssr/configuring-ssr
         ssr: {

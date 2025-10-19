@@ -109,8 +109,8 @@
                                         class="secondary-button" @click="switchToRegisterForm" />
                                     <q-btn flat no-caps dense label="Оффлайн режим" color="deep-orange-8"
                                         class="secondary-button" @click="clickLocalModeBtn" />
-                                    <q-btn flat no-caps dense label="Забыли пароль?" color="grey-7"
-                                        class="secondary-button text-sm" @click="$router.push('/forgot-password')" />
+                                    <!-- <q-btn flat no-caps dense label="Забыли пароль?" color="grey-7"
+                                        class="secondary-button text-sm" @click="$router.push('/forgot-password')" /> -->
                                 </div>
                             </div>
 
@@ -244,6 +244,7 @@ const handleLogin = async () => {
 
 // Обработка регистрации
 const handleRegister = async () => {
+    console.log(form.value);
     // TODO: Реализовать логику регистрации
     // return api.user
     //     .registerRequest(registerForm.value)
