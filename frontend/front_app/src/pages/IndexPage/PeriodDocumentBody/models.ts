@@ -122,7 +122,7 @@ export const PeriodDocCurrentDataRows: PeriodDocInitAndCurrentBaseRow<PeriodDocC
         name: PeriodDocCurrentDataFields.total_spent_actual,
         label: 'Всего потрачено',
         cellType: TableCellType.text,
-        cellFormat: TableCellFormatType.plain,
+        cellFormat: TableCellFormatType.currency,
     },
     {
         name: PeriodDocCurrentDataFields.spent_on_weekends,

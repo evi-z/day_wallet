@@ -82,8 +82,7 @@
                                             :type="state.passwordVisible ? 'text' : 'password'"
                                             label="Подтвердите пароль" color="primary" label-color="grey-7"
                                             class="login-input" autocomplete="new-password" spellcheck="false"
-                                            @keyup.enter="submitForm"
-                                            :rules="[confirmPasswordRule]" hide-bottom-space
+                                            @keyup.enter="submitForm" :rules="[confirmPasswordRule]" hide-bottom-space
                                             key="confirm-password-field">
                                             <template #prepend>
                                                 <q-icon name="sym_o_lock" color="primary"></q-icon>

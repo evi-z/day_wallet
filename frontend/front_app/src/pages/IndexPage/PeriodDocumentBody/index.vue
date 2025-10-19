@@ -129,6 +129,7 @@ const aToDate = computed(() => AppDate.fromFriendlyFormat(document.to_date))
 
 const calendarRows = shallowRef<PeriodDocCalendarRow[]>([])  // Строки календаря
 const currentDate = ref<AppDate>()  // Текущая дата
+const lastCalcDate = ref<AppDate>()  // Последняя дата расчёта плана
 
 const documentMainDBValues = useDocumentMainValuesRef(document)  // Основные значения документа
 const calendarFactDBValues = useDocumentCalendarFactValuesRef(document)  // Факты календаря
@@ -180,16 +181,18 @@ const initDocument = async () => {
 const initDocumentCalcValues = async () => {
     currentDate.value = AppDate.today()
 
+    if (currentDate.value!.isAfter(aToDate.value)) lastCalcDate.value = aToDate.value
+    else if (currentDate.value!.isBefore(aFromDate.value)) lastCalcDate.value = aFromDate.value
+    else lastCalcDate.value = currentDate.value
+
     // Если текущая дата выходит из диапазона, то устанавливаем крайние даты как текущую
-    if (currentDate.value!.isAfter(aToDate.value)) currentDate.value = aToDate.value
-    if (currentDate.value!.isBefore(aFromDate.value)) currentDate.value = aFromDate.value
-
-
     calendarRows.value = getPeriodDocumentCalendarDataRows(document)  // Инициализация строк календаря
     calendarFactDBValues.ignoreValuesUpdates(() => {
         calendarRows.value.forEach(row => {  // Инициализируем факты календаря пустыми значениями (если не заданы)
             if (!Number.isInteger(calendarFactDBValues.value[row.date.friendly])) calendarFactDBValues.value[row.date.friendly] = 0
         })
+
+        // TODO: Удалять факты календаря, которые не входят в диапазон дат документа
         // Не сохраняем в БД до первого обновления фактов
     })
 
@@ -252,7 +255,7 @@ const recalcCalendarPlansAndCurrentData = async () => {
         const spentSoFar = sumFact(i)  // Потрачено до текущей даты
 
         // Рассчитываем план на сегодня (в том числе для выходных - для корректного расчёта последнего плана)
-        lastCalcPlan = remainingWeekends > 0 ? Math.round(
+        lastCalcPlan = remainingWeekdays > 0 ? Math.round(
             // (Изначальный план - потрачено всего до сегодня - план на оставшиеся выходные) / оставшиеся будни
             (documentMainDBValues.value.total_budget - spentSoFar - (remainingWeekends * documentMainDBValues.value.weekend_plan)) / remainingWeekdays
         ) : 0
@@ -264,8 +267,8 @@ const recalcCalendarPlansAndCurrentData = async () => {
     triggerRef(calendarRows)  // Тригер обновления строк календаря
 
     /** Индекс текущей даты */
-    const currentDayIndex = calendarRows.value.findIndex(row => row.date.iso === currentDate.value!.iso)
-    if (currentDayIndex === -1) {
+    const lastCalcDateIndex = calendarRows.value.findIndex(row => row.date.iso === lastCalcDate.value!.iso)
+    if (lastCalcDateIndex === -1) {
         // TODO: Что делать в таком случае?
         // Такого быть не должно
         throw new Error('Current date not found in calendar rows')
@@ -274,10 +277,10 @@ const recalcCalendarPlansAndCurrentData = async () => {
     /** Текущие данные */
     currentDataCalcValues.value = function (): PeriodDocCurrentRowValues {
         const daysRemaining = aToDate.value.diff(currentDate.value!) + 1 // Осталось дней (включая текущий день)
-        const weekendsRemaining = countRemainingDays(currentDayIndex, true)  // Осталось выходных дней
+        const weekendsRemaining = countRemainingDays(lastCalcDateIndex, true)  // Осталось выходных дней
         const weekdaysRemaining = daysRemaining - weekendsRemaining // Осталось будних дней
 
-        const totalSpent = sumFact(currentDayIndex)  // Всего потрачено
+        const totalSpent = sumFact(lastCalcDateIndex)  // Всего потрачено
         const spentOnWeekends = calendarRows.value.filter(  // Потрачено в выходные
             row => row.date.isWeekend()).reduce((acc, row) => acc + calendarFactDBValues.value[row.date.friendly]!, 0
             )
