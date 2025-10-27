@@ -5,6 +5,7 @@ import axios, {
 } from "axios";
 import { handleResponseError } from "./handlers";
 import ApiResponse from "./axios";
+import app from "../app";
 
 const TIMEOUT = 10000
 const BACKEND_URL = [
@@ -30,10 +31,9 @@ const onRequest = async (
     req.url = url.endsWith("/") ? url : url + "/";
 
     /** Add auth token */
-    // const { token } = $store.userStore;
-    // if (token) {
-    //     req.headers["Authorization"] = `Token ${token}`;
-    // }
+    if (app.user?.auth_token) {
+        req.headers["Authorization"] = `Token ${app.user.auth_token}`;
+    }
 
     return req;
 };

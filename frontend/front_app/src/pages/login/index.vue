@@ -152,7 +152,9 @@ import { PAGES } from 'src/router/models';
 import { computed, nextTick, reactive, ref, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { reqRule } from 'src/utils/form-rules';
-import { LoginFormModeMap, LoginFormMode, LoginFormDefault, LoginOrRegisterForm, RegisterForm, RegisterFormDefault } from './models';
+import { LoginFormModeMap, LoginFormMode, LoginFormDefault, LoginOrRegisterForm, RegisterForm, RegisterFormDefault, LoginForm } from './models';
+import api from 'src/api';
+import app from 'src/services/app';
 
 const $q = useQuasar();
 const $router = useRouter();
@@ -223,57 +225,44 @@ const submitForm = async () => {
 
 // Обработка логина
 const handleLogin = async () => {
-    // TODO: Реализовать логику входа
-    // return api.user
-    //     .loginRequest(loginForm.value)
-    //     .then((res) => {
-    //         $store.userStore.setToken(res.token).then(() => $router.go(0));
-    //     })
-    //     .catch((err) => {
-    //         $q.notify({
-    //             type: "warning",
-    //             message: "Неверный логин или пароль",
-    //         });
-    //     });
-
-    $q.notify({
-        type: "info",
-        message: "Логин временно недоступен",
-    });
+    return api.auth.login(form.value as LoginForm).then(async(res) => {
+        await app.login(res);
+        $router.push({ name: PAGES.Index });
+    }).catch((err) => {
+        console.error(err);
+        $q.notify({
+            type: "negative",
+            message: "Ошибка при входе. Попробуйте снова.",
+        });
+    })
 };
 
 // Обработка регистрации
 const handleRegister = async () => {
-    console.log(form.value);
-    // TODO: Реализовать логику регистрации
-    // return api.user
-    //     .registerRequest(registerForm.value)
-    //     .then((res) => {
-    //         $q.notify({
-    //             type: "positive",
-    //             message: "Регистрация прошла успешно! Проверьте почту для подтверждения.",
-    //         });
-    //         switchToLogin();
-    //     })
-    //     .catch((err) => {
-    //         $q.notify({
-    //             type: "negative",
-    //             message: "Ошибка при регистрации. Попробуйте снова.",
-    //         });
-    //     });
+    state.submitBtnLoading = true;
+    return api.auth.register(form.value as RegisterForm).then(async(res) => {
+        $q.notify({
+            type: "positive",
+            message: "Вы зарегистрированы!",
+        })
 
-    $q.notify({
-        type: "positive",
-        message: "Регистрация временно недоступна",
-    });
-};
+        await switchToLoginForm()
+    }).catch((err) => {
+        $q.notify({
+            type: "negative",
+            message: "Ошибка при регистрации. Попробуйте снова.",
+        });
+    }).finally(() => {
+        state.submitBtnLoading = false;
+    })
+}
 
 const switchToLoginForm = async () => {
     form.value = { ...LoginFormDefault }
     await nextTick()
     state.currentFormMode = LoginFormMode.login;
     state.passwordVisible = false;
-};
+}
 
 const switchToRegisterForm = async () => {
     form.value = { ...RegisterFormDefault, email: form.value.email }

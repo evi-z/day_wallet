@@ -18,10 +18,15 @@ export class AppDatabaseService extends BaseDatabaseService {
 
     async putUserData(userData: AppUser) {
         /** Сохраняет данные авторизованного пользователя */
-        return this.db.put(USER_DATA_KEY, {
+
+        const currentUserDoc = await this.getByIdOrNull<AppUser>(USER_DATA_KEY)
+        const newUserDoc = {
             _id: USER_DATA_KEY,
+            ...(currentUserDoc || {}),
             ...userData
-        })
+        }
+
+        return this.db.put(newUserDoc)
     }
 
     async removeUserData() {

@@ -7,7 +7,6 @@ import envVariables from "./envs/env_parser";
 export default defineConfig((/* ctx */) => {
     return {
         boot: [
-            'axios',
             'init_app'
         ],
 
@@ -46,7 +45,9 @@ export default defineConfig((/* ctx */) => {
             // publicPath: '/',
             // analyze: true,
             // env: {},
-            // rawDefine: {}
+            rawDefine: {
+                global: 'globalThis', // Полифилл для Node.js библиотек в браузере
+            },
             // ignorePublicFolder: true,
             // minify: false,
             // polyfillModulePreload: true,

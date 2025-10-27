@@ -1,24 +1,42 @@
 import { PeriodDocumentCalendarFactValuesData, PeriodDocumentCalendarFactValuesDBData, PeriodDocumentDBData, PeriodDocumentFormData, PeriodDocumentMainValuesData, PeriodDocumentMainValuesDBData, UserDBDataType } from 'src/models/database'
 import { BaseTypeDatabaseService } from './base'
 
-const PERFIX_DATABASE_NAME = 'day-wallet-user-db'
-const LOCAL_USER_ID = 'local'
+// const PERFIX_DATABASE_NAME = 'day-wallet-user-db' 
+const LOCAL_USER_DATABASE_NAME = 'day-wallet-user-db-local'
 
 
 export class UserDatabaseService extends BaseTypeDatabaseService<UserDBDataType> {
     /** База данных для пользователя */
 
-    constructor(userId: string | null) {
+    constructor(dbName: string | null) {
         /**
          * Тут потом надо будет принимать пользователя из ID юзера
          * */
-        const databaseName = PERFIX_DATABASE_NAME + '-' + (userId || LOCAL_USER_ID)
-        super(databaseName)
+        super(dbName ?? LOCAL_USER_DATABASE_NAME)
         this.db.createIndex({
             index: {
                 fields: ['document_id']
             }
         })
+    }
+
+    async syncWithRemoteDB(remoteDB: PouchDB.Database) {
+        return this.db.sync(remoteDB, {
+            live: true,
+            retry: true
+        }).on('change', function (change) {
+            console.log('Change:', change)  
+            // yo, something changed!
+        }).on('paused', function (info) {
+            console.log('Paused:', info)
+            // replication was paused, usually because of a lost connection
+        }).on('active', function () {
+            console.log('Active')
+            // replication was resumed
+        }).on('error', function (err) {
+            console.log('Error:', err)
+            // totally unhandled error (shouldn't happen)
+        });
     }
 
     /** Создаёт новый документ периода */

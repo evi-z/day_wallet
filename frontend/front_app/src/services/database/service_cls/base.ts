@@ -1,8 +1,10 @@
 import PouchDB from 'pouchdb'
 import PouchDBFind from 'pouchdb-find'
+import PouchDBAuthentication from 'pouchdb-authentication'
 
 export const initPouchDB = () => {
     PouchDB.plugin(PouchDBFind)
+    PouchDB.plugin(PouchDBAuthentication)
 }
 
 export class BaseDatabaseService {

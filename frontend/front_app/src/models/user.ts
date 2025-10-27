@@ -1,3 +1,11 @@
 export type AppUser = {
-    id: string
+    name: string
+    email: string
+    db_name: string
+    auth_token: string
+}
+
+export type UserRemoteDBData = {
+    db_username: string
+    db_password: string
 }
