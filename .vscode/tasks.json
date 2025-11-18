@@ -4,12 +4,8 @@
     {
       "label": "Run Backend",
       "type": "shell",
-      // "command": "uv run granian --reload backend_app.asgi:application",
-      "command": "uv run manage.py runserver 0.0.0.0:8000",
-      "group": "build",
-      "problemMatcher": [],
+      "command": "make backend-run",
       "options": {
-        "cwd": "${workspaceFolder}/backend",
         "statusbar": {
           "label": "$(server) Run Backend"
         }
@@ -18,29 +14,22 @@
     {
       "label": "Run Frontend",
       "type": "shell",
-      "command": "pnpm run dev",
-      "group": "build",
-      "problemMatcher": [],
+      "command": "make frontend-run",
       "options": {
-        "cwd": "${workspaceFolder}/frontend/front_app",
         "statusbar": {
           "label": "$(globe) Run Frontend"
         }
       }
     },
     {
-      "label": "Run Full Local",
+      "label": "Run Back + Front",
       "dependsOn": [
         "Run Backend",
-        "Run Frontend Local"
+        "Run Frontend"
       ],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
       "options": {
         "statusbar": {
-          "label": "$(run-all) Full Local"
+          "label": "$(run-all) Run Back + Front"
         }
       }
     }

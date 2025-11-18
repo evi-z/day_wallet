@@ -14,17 +14,17 @@
 ### BACKEND ###
 **/uv.lock
 **/.venv
-**/__pycache__/
+**/__pycache__/**
 **/*.pyc
-
+**/*.sqlite3
 
 ### FRONTEND ###
 **/node_modules
 **/auto-imports.d.ts
 **/.eslintrc-auto-import.json
-**package-lock.json
-**pnpm-lock.yaml
-**pnpm-workspace.yaml
+**/package-lock.json
+**/pnpm-lock.yaml
+**/pnpm-workspace.yaml
 
 # Quasar core
 .quasar
@@ -43,7 +43,7 @@
 
 ### ENV FILES ###
 .env
-.env.private
+**/.env.private
 
 ### DOCKER ###
 data/**

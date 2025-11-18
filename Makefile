@@ -1,5 +1,15 @@
 .PHONY: help docker-up docker-down docker-logs docker-clean docker-exec-db couchdb-ui
 
+# Загрузка переменных из .env файла
+ifneq (,$(wildcard ./.env))
+    include .env
+    export
+endif
+
+# Значения по умолчанию для переменных backend
+BACKEND_HOST ?= 127.0.0.1
+BACKEND_PORT ?= 8000
+
 # Цвета для вывода
 GREEN := \033[0;32m
 YELLOW := \033[0;33m
@@ -22,6 +32,16 @@ backend-setup:  ## Обновление зависимостей backend
 
 setup: frontend-setup backend-setup ## Обновление зависимостей frontend и backend
 
+makemigrations-backend: ## Создать миграции базы данных
+	@echo "$(GREEN)Создание миграций backend...$(NC)"
+	cd backend && uv run python manage.py makemigrations
+	@echo "$(GREEN)✓ Миграции созданы$(NC)"
+
+migrate-backend: ## Выполнить миграции базы данных
+	@echo "$(GREEN)Выполнение миграций backend...$(NC)"
+	cd backend && uv run python manage.py migrate --noinput
+	@echo "$(GREEN)✓ Миграции выполнены$(NC)"
+
 frontend-run: ## Запуск frontend
 	@echo "$(GREEN)Запуск frontend...$(NC)"
 	cd frontend/front_app && pnpm run dev
@@ -29,7 +49,7 @@ frontend-run: ## Запуск frontend
 
 backend-run: ## Запуск backend
 	@echo "$(GREEN)Запуск backend...$(NC)"
-	cd backend && uv run python manage.py runserver
+	cd backend && uv run python manage.py runserver $(BACKEND_HOST):$(BACKEND_PORT)
 	@echo "$(GREEN)✓ Backend запущен$(NC)"
 
 docker-up: ## Запустить все сервисы
