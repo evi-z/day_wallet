@@ -1,0 +1,19 @@
+services:
+  dw-couchdb:
+      build:
+        context: ./couchdb
+        dockerfile: Dockerfile
+      container_name: dw-couchdb
+      restart: always
+      ports:
+        - "5984:5984"
+      environment:
+        - COUCHDB_USER=admin
+        - COUCHDB_PASSWORD=adminpass
+      volumes:
+        - ./data/couchdb:/opt/couchdb/data 
+      networks:
+        - main
+    
+networks:
+  main:

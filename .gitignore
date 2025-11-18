@@ -1,0 +1,49 @@
+# COMMON
+.DS_Store
+.thumbs.db
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Logs
+**/*.log*
+
+
+### BACKEND ###
+**/uv.lock
+**/.venv
+**/__pycache__/
+**/*.pyc
+
+
+### FRONTEND ###
+**/node_modules
+**/auto-imports.d.ts
+**/.eslintrc-auto-import.json
+**package-lock.json
+**pnpm-lock.yaml
+**pnpm-workspace.yaml
+
+# Quasar core
+.quasar
+/dist
+**/quasar.config.*.temporary.compiled*
+
+# Cordova related directories and files
+/src-cordova/node_modules
+/src-cordova/platforms
+/src-cordova/plugins
+/src-cordova/www
+
+# Capacitor related directories and files
+/src-capacitor/www
+/src-capacitor/node_modules
+
+### ENV FILES ###
+.env
+.env.private
+
+### DOCKER ###
+data/**

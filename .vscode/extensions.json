@@ -1,0 +1,27 @@
+{
+    "recommendations": [
+      // Python
+      "ms-python.python",
+      "ms-python.vscode-pylance",
+      "charliermarsh.ruff",  // Ruff
+      "anysphere.cursorpyright",  // CursorPyright
+  
+      // Frontend
+      "Vue.volar",  // Vue
+      "mrmlnc.vscode-scss",  // SCSS
+  
+      // Remote
+      "anysphere.remote-wsl",  // Remote WSL
+      "ms-vscode.remote-explorer",  // Remote Explorer
+  
+      // Other
+      "wayou.vscode-todo-highlight",  // TODO Highlight
+      "alefragnani.numbered-bookmarks",  // Numbered Bookmarks
+      "actboy168.tasks",  // Task Runner
+      "vivaxy.vscode-conventional-commits",  // Conventional Commits
+      "tamasfe.even-better-toml",  // Better TOML
+      "EditorConfig.EditorConfig",  // EditorConfig
+    ],
+    "unwantedRecommendations": []
+  }
+  

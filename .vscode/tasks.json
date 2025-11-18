@@ -1,0 +1,48 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Backend",
+      "type": "shell",
+      // "command": "uv run granian --reload backend_app.asgi:application",
+      "command": "uv run manage.py runserver 0.0.0.0:8000",
+      "group": "build",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}/backend",
+        "statusbar": {
+          "label": "$(server) Run Backend"
+        }
+      }
+    },
+    {
+      "label": "Run Frontend",
+      "type": "shell",
+      "command": "pnpm run dev",
+      "group": "build",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}/frontend/front_app",
+        "statusbar": {
+          "label": "$(globe) Run Frontend"
+        }
+      }
+    },
+    {
+      "label": "Run Full Local",
+      "dependsOn": [
+        "Run Backend",
+        "Run Frontend Local"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "options": {
+        "statusbar": {
+          "label": "$(run-all) Full Local"
+        }
+      }
+    }
+  ]
+}
