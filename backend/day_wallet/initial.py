@@ -3,7 +3,7 @@ import os
 
 
 def initialize_app(*args, **kwargs):
-    app_name = os.getenv("APP_NAME")
+    app_name = os.getenv("BACKEND_APP_NAME")
     if not app_name:
         print("APP_NAME env is not set, skipping app initialization")
         return
@@ -11,8 +11,8 @@ def initialize_app(*args, **kwargs):
     settings, _ = AppSettings.objects.get_or_create(name=app_name)
 
     superuser_username, superuser_password = (
-        os.getenv("SUPERUSER_USERNAME"),
-        os.getenv("SUPERUSER_PASSWORD"),
+        os.getenv("BACKEND_SUPERUSER_USERNAME"),
+        os.getenv("BACKEND_SUPERUSER_PASSWORD"),
     )
 
     if not superuser_username or not superuser_password:

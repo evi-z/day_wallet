@@ -74,9 +74,9 @@ docker-exec-db: ## Выполнить команду в контейнере Cou
 	docker-compose exec develop-couchdb $(CMD)
 
 couchdb-ui: ## Открыть CouchDB UI в браузере
-	@echo "$(GREEN)CouchDB UI: http://localhost:5984/_utils$(NC)"
-	@echo "$(YELLOW)Логин: admin$(NC)"
-	@echo "$(YELLOW)Пароль: adminpass$(NC)"
+	@echo "$(GREEN)CouchDB UI: http://$(COUCHDB_HOST):$(COUCHDB_PORT)/_utils$(NC)"
+	@echo "$(YELLOW)Логин: $(COUCHDB_ADMIN_USERNAME)$(NC)"
+	@echo "$(YELLOW)Пароль: $(COUCHDB_ADMIN_PASSWORD)$(NC)"
 
 # По умолчанию показывать help
 .DEFAULT_GOAL := help
