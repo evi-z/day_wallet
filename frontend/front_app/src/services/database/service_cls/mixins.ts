@@ -79,7 +79,7 @@ export function DBWithRemoteSync<TBase extends Constructor<BaseDatabaseService>>
 
         async initSyncWithRemote(remoteDB: PouchDB.Database) {
             /** Инициализирует синхронизацию с удалённой БД */
-            
+
             this._remoteDB = remoteDB
             await this._replicateFromRemote() // Подтягиваем данные из удалённой БД в локальную
             this._startSyncWithRemote() // Запускаем синхронизацию

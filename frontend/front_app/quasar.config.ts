@@ -4,14 +4,16 @@
 import { defineConfig } from '#q-app/wrappers';
 import envVariables from "./envs/env_parser";
 
-export default defineConfig((/* ctx */) => {
+export default defineConfig((ctx) => {
+    // Получаем все env переменные через парсер
+    const env = envVariables();
+
     return {
         boot: [
             'init_app'
         ],
 
         css: ['app.scss'],
-        envFiles: envVariables(),
 
         // https://github.com/quasarframework/quasar/tree/dev/extras
         extras: [
@@ -42,30 +44,50 @@ export default defineConfig((/* ctx */) => {
 
             vueRouterMode: 'hash', // available values: 'hash', 'history'
 
-            // publicPath: '/',
-            // analyze: true,
-            // env: {},
+            // Передаём переменные окружения (будут доступны через import.meta.env)
+            env,
+
             rawDefine: {
                 global: 'globalThis', // Полифилл для Node.js библиотек в браузере
             },
-            // ignorePublicFolder: true,
-            // minify: false,
-            // polyfillModulePreload: true,
-            // distDir
 
-            // extendViteConf (viteConf) {},
-            // viteVuePluginOptions: {},
-
-            // vitePlugins: [
-            //   [ 'package-name', { ..pluginOptions.. }, { server: true, client: true } ]
-            // ]
+            // Расширяем конфигурацию Vite для правильной обработки env переменных
+            extendViteConf(viteConf) {
+                // Добавляем наши переменные в Vite define (правильный способ)
+                viteConf.define = viteConf.define || {};
+                Object.entries(env).forEach(([key, value]) => {
+                    viteConf.define[`import.meta.env.${key}`] = JSON.stringify(value);
+                });
+            },
         },
 
         // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#devserver
         devServer: {
             // https: true,
-            open: true, // opens browser window bautomatically
-            port: 9876,
+            open: true, // opens browser window automatically
+            port: parseInt(env.VITE_FRONTEND_DEV_PORT),
+
+            // Proxy для dev режима: перенаправляем /db и /api на локальные сервисы
+            // proxy: {
+            //     // CouchDB proxy
+            //     '/db': {
+            //         target: `http://localhost:5984`,
+            //         changeOrigin: true,
+            //         pathRewrite: { '^/db': '' },
+            //         configure: (proxy, options) => {
+            //             // Логируем запросы для отладки (можно убрать потом)
+            //             proxy.on('proxyReq', (proxyReq, req, res) => {
+            //                 console.log(`[Proxy] ${req.method} ${req.url} -> ${options.target}${req.url}`);
+            //             });
+            //         }
+            //     },
+
+            //     // Backend API proxy (если нужен)
+            //     '/api': {
+            //         target: `http://${env.VITE_BACKEND_HOST}:${env.VITE_BACKEND_PORT}`,
+            //         changeOrigin: true,
+            //     }
+            // }
         },
 
         // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework

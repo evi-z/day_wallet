@@ -7,11 +7,15 @@ import { handleResponseError } from "./handlers";
 import ApiResponse from "./axios";
 import app from "../app";
 
+const BACKEND_HOST = import.meta.env.VITE_BACKEND_HOST;
+const BACKEND_PORT = import.meta.env.VITE_BACKEND_PORT;
+const BACKEND_PROTOCOL = import.meta.env.VITE_BACKEND_PROTOCOL;
+
 const TIMEOUT = 10000
 const BACKEND_URL = [
-    import.meta.env.VITE_BACKEND_HTTP_PROTO,
+    BACKEND_PROTOCOL,
     "://",
-    import.meta.env.VITE_BACKEND_PATH + "/api/v1",
+    BACKEND_HOST + ":" + BACKEND_PORT + "/api/v1",
 ].join("")
 
 const config: Partial<AxiosRequestConfig> = {

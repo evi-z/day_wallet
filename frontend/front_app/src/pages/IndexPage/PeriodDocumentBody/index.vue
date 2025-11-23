@@ -138,13 +138,13 @@ const initDataCalcValues = ref<PeriodDocInitCalcRowValues>({} as PeriodDocInitCa
 const currentDataCalcValues = ref<PeriodDocCurrentRowValues>({} as PeriodDocCurrentRowValues)  // Текущие данные
 
 /** Слежение за основными значениями документа */
-documentMainDBValues.bindValuesWatcherCallback(async (values) => {
+documentMainDBValues.bindValuesWatcher(async (values) => {
     await recalcDocumentCalcValues(false)  // Пересчёт калькулируемых данных
 })
 
 /** Слежение за значениями фактов календаря */
-calendarFactDBValues.bindValuesWatcherCallback(async (values) => {
-    await recalcCalendarPlansAndCurrentData()
+calendarFactDBValues.bindValuesWatcher(async (values) => {
+    await recalcCalendarPlansAndCurrentData()  // Пересчёт планов календаря и текущих данных
 })
 
 /** Получение модели значения исходных данных */

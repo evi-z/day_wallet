@@ -1,6 +1,9 @@
-import { extendRef, reactiveOmit, reactivePick, watchIgnorable } from "@vueuse/core"
-import {  reactive, ref, shallowReactive, shallowRef } from "vue"
+import { extendRef, watchIgnorable } from "@vueuse/core"
+import { ref, shallowRef } from "vue"
 import { type InstanceOfDBWithRemoteSync } from "src/services/database/service_cls/mixins"
+import { omitObject, pickObject } from "src/utils/js-utils"
+
+
 
 /** Поля метаданных, исключаемые из основных значений */
 const DEFAULT_METADATA_FIELDS = ['_id', '_rev'] as const satisfies readonly (keyof PouchDB.Core.ExistingDocument<object>)[]
@@ -20,12 +23,15 @@ const UseDatabaseDocumentRefDefaultOptions: Partial<UseDatabaseDocumentRefOption
     autoSaveToDB: true,
 } as const
 
+type ValuesWatcherCallback<T extends object, A extends readonly string[] = readonly []> = (values: ObjectWithoutMetadataFields<T, A>) => Promise<void>
+
 export type DatabaseDocumentRef<T extends object, A extends readonly string[] = readonly []> = {
     value: ObjectWithoutMetadataFields<T, A>
     initFromDB: () => Promise<void>
     saveToDB: () => Promise<void>
     ignoreValuesUpdates: (updater: () => void) => void
-    bindValuesWatcherCallback: (callback: (values: ObjectWithoutMetadataFields<T, A>) => Promise<void>) => void
+    bindValuesWatcher: (callback: ValuesWatcherCallback<T, A>) => void
+    unbindValuesWatcher: (callback: ValuesWatcherCallback<T, A>) => void
 }
 
 export const useDatabaseDocumentRef = <T extends object, A extends readonly string[] = readonly []>(options: UseDatabaseDocumentRefOptions<T, A>): DatabaseDocumentRef<T, A> => {
@@ -35,41 +41,64 @@ export const useDatabaseDocumentRef = <T extends object, A extends readonly stri
     const valueRef = ref<ObjectWithoutMetadataFields<T, A>>({} as ObjectWithoutMetadataFields<T, A>)
     const metadata = shallowRef<ObjectMetadataFields<T, A>>({} as ObjectMetadataFields<T, A>)
 
-    // Колбек вызова вотчера слежения за изменениями основных значений (привязывается снаружи после инициализации)
-    let valuesWatcherCallback: (DatabaseDocumentRef<T, A>['bindValuesWatcherCallback']) | null = null
-    const bindValuesWatcherCallback = (callback: DatabaseDocumentRef<T, A>['bindValuesWatcherCallback']) => {
-        valuesWatcherCallback = callback
+    // Работа с коллбэками слежения за изменениями значений (привязываются снаружи после инициализации)
+    const valuesWatchers = <ValuesWatcherCallback<T, A>[]>([] as ValuesWatcherCallback<T, A>[])
+    const bindValuesWatcher = (callback: ValuesWatcherCallback<T, A>) => {
+        if (valuesWatchers.includes(callback)) return  // Если коллбэк уже привязан, то не привязываем его снова
+        valuesWatchers.push(callback)
+    }
+
+    const unbindValuesWatcher = (callback: ValuesWatcherCallback<T, A>) => {
+        const index = valuesWatchers.indexOf(callback)
+        if (index === -1) {
+            console.warn('Values watcher not found:', callback)
+            return
+        }
+        valuesWatchers.splice(index, 1)
+    }
+
+    const callValuesWatchers = async () => {
+        for (const watcher of valuesWatchers) {
+            try {
+                await watcher(valueRef.value)
+            } catch (error) {
+                console.error('Error calling values watcher:', error)
+            }
+        }
     }
 
     /** Вотчер слежения за изменениями основных значений (инициализируется при bindSaveToDBWatcher = true) */
-    const { ignoreUpdates: ignoreValuesUpdates } = watchIgnorable(
+    const { ignoreUpdates: ignoreValuesUpdate } = watchIgnorable(
         valueRef,
         async () => {
-            if (valuesWatcherCallback) await valuesWatcherCallback(valueRef.value)
             if (options.autoSaveToDB) await saveToDB()
+            await callValuesWatchers()
         },
         { deep: true }
     )
 
-    const silentUpdateValues = (values: ObjectWithoutMetadataFields<T, A>) => {
-        /** Обновляет значения без вызова коллбэка слежения за изменениями и сохранения в БД */
+    const updateFromDocValues = (values: T) => {
+        /** Обновляет значения из документа  */
 
-        ignoreValuesUpdates(() => {
-            valueRef.value = { ...reactiveOmit(values, ...metadataFields as any) } as ObjectWithoutMetadataFields<T, A>
+        ignoreValuesUpdate(() => {
+            valueRef.value = omitObject(values, ...metadataFields as any) as ObjectWithoutMetadataFields<T, A>
         })
 
-        metadata.value = { ...reactivePick(values, ...metadataFields as any) } as ObjectMetadataFields<T, A>
+        metadata.value = pickObject(values, ...metadataFields as any) as ObjectMetadataFields<T, A>
     }
 
     const initFromDB = async () => {
-        const values = shallowReactive(await options.initFn())  // Вызываем колбек инициализации значений из БД и делаем их реактивными
+        const values = await options.initFn()  // Вызываем колбек инициализации значений из БД
 
-        silentUpdateValues(values)
+        updateFromDocValues(values)
 
         if (options.bindToRemote) {
-            options.bindToRemote.addRemoteDBChangeListener(metadata.value._id, (doc) => {
+            /** Привязываем коллбэк на изменение документа в удалённой БД (pull) */
+            options.bindToRemote.addRemoteDBChangeListener(metadata.value._id, async (doc) => {
                 console.log('Remote DB change for document:', metadata.value._id, doc)
-                silentUpdateValues(doc as ObjectWithoutMetadataFields<T, A>)
+                updateFromDocValues(doc as T)  // Обновляем значения для ref-ов (в БД уже сохранены новые значения)
+                // Вызываем коллбэк на изменение значений (если привязан)
+                await callValuesWatchers()
             })
         }
     }
@@ -84,7 +113,8 @@ export const useDatabaseDocumentRef = <T extends object, A extends readonly stri
     return extendRef(valueRef, {
         initFromDB,
         saveToDB,
-        ignoreValuesUpdates,
-        bindValuesWatcherCallback,
+        ignoreValuesUpdates: ignoreValuesUpdate,
+        bindValuesWatcher,
+        unbindValuesWatcher,
     }) as any as DatabaseDocumentRef<T, A>
 }

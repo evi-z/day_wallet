@@ -1,11 +1,12 @@
-from dotenv import load_dotenv
 import os
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+from dotenv import load_dotenv
 load_dotenv()
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+SECRET_KEY = os.getenv("BACKEND_SECRET_KEY")
 
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
@@ -103,5 +104,3 @@ COUCHDB_ADMIN_PASSWORD = os.getenv("COUCHDB_ADMIN_PASSWORD")
 COUCHDB_URL = f"http://{COUCHDB_HOST}:{COUCHDB_PORT}"
 
 STATIC_URL = "/static/"
-
-print(COUCHDB_URL)

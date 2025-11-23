@@ -78,5 +78,11 @@ couchdb-ui: ## Открыть CouchDB UI в браузере
 	@echo "$(YELLOW)Логин: $(COUCHDB_ADMIN_USERNAME)$(NC)"
 	@echo "$(YELLOW)Пароль: $(COUCHDB_ADMIN_PASSWORD)$(NC)"
 
+kill-ports: ## Закрыть все порты
+	@echo "$(RED)Закрытие всех портов...$(NC)"
+	@kill -9 $$(lsof -t -i:$(BACKEND_PORT)) || true
+	@kill -9 $$(lsof -t -i:$(FRONTEND_DEV_PORT)) || true
+	@echo "$(GREEN)✓ Порты закрыты$(NC)"
+
 # По умолчанию показывать help
 .DEFAULT_GOAL := help
