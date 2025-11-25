@@ -6,26 +6,19 @@ import axios, {
 import { handleResponseError } from "./handlers";
 import ApiResponse from "./axios";
 import app from "../app";
+import { config } from "@/config";
 
-const BACKEND_HOST = import.meta.env.VITE_BACKEND_HOST;
-const BACKEND_PORT = import.meta.env.VITE_BACKEND_PORT;
-const BACKEND_PROTOCOL = import.meta.env.VITE_BACKEND_PROTOCOL;
 
 const TIMEOUT = 10000
-const BACKEND_URL = [
-    BACKEND_PROTOCOL,
-    "://",
-    BACKEND_HOST + ":" + BACKEND_PORT + "/api/v1",
-].join("")
 
-const config: Partial<AxiosRequestConfig> = {
-    baseURL: BACKEND_URL,
+const axiosConfig: Partial<AxiosRequestConfig> = {
+    baseURL: config.BACKEND_API_PATH,
     timeout: TIMEOUT,
     showErrorNotify: true,
     fullResponse: false,
 } as const
 
-const api = axios.create(config);
+const api = axios.create(axiosConfig);
 
 const onRequest = async (
     req: InternalAxiosRequestConfig,

@@ -10,10 +10,15 @@ export const initPouchDB = () => {
 export class BaseDatabaseService {
     /** Базовый класс для работы с БД */
 
-    protected db: PouchDB.Database
+    db: PouchDB.Database
 
     constructor(key: string) {
         this.db = new PouchDB(key)
+        this.db.createIndex({
+            index: {
+                fields: ['created_at']
+            }
+        })
     }
 
     async getByIdOrNull<T extends object>(id: string): Promise<T | null> {
@@ -97,12 +102,19 @@ export class BaseDatabaseService {
 export class BaseTypeDatabaseService<T extends string> extends BaseDatabaseService {
     /** Базовый класс для работы с БД с типовыми документами */
 
+    private _indexes: readonly string[][] = [
+        ['type'],
+        ['type', 'created_at'],
+    ] as const
+
     constructor(key: string) {
         super(key)
-        this.db.createIndex({
-            index: {
-                fields: ['type']
-            }
+        this._indexes.forEach(index => {
+            this.db.createIndex({
+                index: {
+                    fields: index
+                }
+            })
         })
     }
 
@@ -141,11 +153,25 @@ export class BaseTypeDatabaseService<T extends string> extends BaseDatabaseServi
         return this._createTypeDocument(type, data)
     }
 
-    async _findByType<T extends object>(type: string): Promise<PouchDB.Core.ExistingDocument<T>[]> {
+    async _findByType<T extends object>(type: string, params?: Partial<PouchDB.Find.FindRequest<T>>): Promise<PouchDB.Core.ExistingDocument<T>[]> {
         /**
          * Получает все документы из результатов поиска по типу
          * */
 
-        return this._find<T>({ selector: { type } })
+        const findRequest: PouchDB.Find.FindRequest<T> = {
+            ...(params || {}),
+            selector: {
+                ...(params?.selector || {}),
+                type: type
+            },
+        }
+
+        // console.log(findRequest)
+        // this.db.getIndexes().then(function (result) {
+        //     console.log('getIndexes result:', result)
+        // })
+
+        return this._find<T>({ ...findRequest }) // find изменяет объект request
     }
 }
+

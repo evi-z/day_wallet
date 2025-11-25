@@ -2,11 +2,13 @@
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file
 
 import { defineConfig } from '#q-app/wrappers';
+import path from 'path';
 import envVariables from "./envs/env_parser";
 
 export default defineConfig((ctx) => {
     // Получаем все env переменные через парсер
     const env = envVariables();
+    console.log('Env:', env);
 
     return {
         boot: [
@@ -32,6 +34,10 @@ export default defineConfig((ctx) => {
 
         // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#build
         build: {
+            env: env,
+            alias: {
+                "@": path.join(__dirname, "./src"),
+            },
             target: {
                 browser: ['es2022', 'firefox115', 'chrome115', 'safari14'],
                 node: 'node20'
@@ -43,62 +49,62 @@ export default defineConfig((ctx) => {
             },
 
             vueRouterMode: 'hash', // available values: 'hash', 'history'
-
-            // Передаём переменные окружения (будут доступны через import.meta.env)
-            env,
+            publicPath: '/',
 
             rawDefine: {
                 global: 'globalThis', // Полифилл для Node.js библиотек в браузере
-            },
-
-            // Расширяем конфигурацию Vite для правильной обработки env переменных
-            extendViteConf(viteConf) {
-                // Добавляем наши переменные в Vite define (правильный способ)
-                viteConf.define = viteConf.define || {};
-                Object.entries(env).forEach(([key, value]) => {
-                    viteConf.define[`import.meta.env.${key}`] = JSON.stringify(value);
-                });
             },
         },
 
         // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#devserver
         devServer: {
-            // https: true,
-            open: true, // opens browser window automatically
-            port: parseInt(env.VITE_FRONTEND_DEV_PORT),
+            hot: true,
+            open: true,
+            watch: {
+                ignored: [
+                    '**/dist/**',
+                    '**/node_modules/**',
+                    '.quasar/**'
+                ],
+                usePolling: true,  // Enable WSL polling
+            },
+            port: parseInt(env.FRONTEND_DEV_PORT),
 
-            // Proxy для dev режима: перенаправляем /db и /api на локальные сервисы
-            // proxy: {
-            //     // CouchDB proxy
-            //     '/db': {
-            //         target: `http://localhost:5984`,
-            //         changeOrigin: true,
-            //         pathRewrite: { '^/db': '' },
-            //         configure: (proxy, options) => {
-            //             // Логируем запросы для отладки (можно убрать потом)
-            //             proxy.on('proxyReq', (proxyReq, req, res) => {
-            //                 console.log(`[Proxy] ${req.method} ${req.url} -> ${options.target}${req.url}`);
-            //             });
-            //         }
-            //     },
-
-            //     // Backend API proxy (если нужен)
-            //     '/api': {
-            //         target: `http://${env.VITE_BACKEND_HOST}:${env.VITE_BACKEND_PORT}`,
-            //         changeOrigin: true,
-            //     }
-            // }
+            proxy: {
+                '/api': {
+                    target: `http://${env.BACKEND_DEV_HOSTNAME}:${env.BACKEND_DEV_PORT}`,
+                    changeOrigin: true,
+                    configure: (proxy, options) => {
+                        // Логирование запросов
+                        proxy.on('proxyReq', (proxyReq, req, res) => {
+                            console.log(`[Backend Proxy] ${req.method} ${req.url} -> ${options.target}${req.url}`);
+                        });
+                    }
+                },
+                // '/db': {
+                //     target: `http://localhost:5984`,
+                //     changeOrigin: true,
+                //     pathRewrite: { '^/db': '' },
+                //     configure: (proxy, options) => {
+                //         // Логируем запросы для отладки (можно убрать потом)
+                //         proxy.on('proxyReq', (proxyReq, req, res) => {
+                //             console.log(`[Proxy] ${req.method} ${req.url} -> ${options.target}${req.url}`);
+                //         });
+                //     }
+                // },
+            }
         },
 
         // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework
         framework: {
             config: {},
-            lang: 'ru', // Quasar language pack
 
-            // iconSet: 'material-icons', // Quasar icon set
+            iconSet: "material-symbols-outlined", // Quasar icon set
+            lang: 'ru', // Quasar language pack
             // Quasar plugins
             plugins: [
-                'Notify'
+                'Notify',
+                'Dialog',
             ]
         },
 

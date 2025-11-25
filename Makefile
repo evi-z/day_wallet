@@ -7,8 +7,9 @@ ifneq (,$(wildcard ./.env))
 endif
 
 # Значения по умолчанию для переменных backend
-BACKEND_HOST ?= 127.0.0.1
-BACKEND_PORT ?= 8000
+FRONTEND_DEV_PORT ?= 9876
+BACKEND_DEV_HOSTNAME ?= 127.0.0.1
+BACKEND_DEV_PORT ?= 8000
 
 # Цвета для вывода
 GREEN := \033[0;32m
@@ -44,12 +45,14 @@ migrate-backend: ## Выполнить миграции базы данных
 
 frontend-run: ## Запуск frontend
 	@echo "$(GREEN)Запуск frontend...$(NC)"
+	@kill -9 $$(lsof -t -i:$(FRONTEND_DEV_PORT)) 2>/dev/null || true
 	cd frontend/front_app && pnpm run dev
 	@echo "$(GREEN)✓ Frontend запущен$(NC)"
 
 backend-run: ## Запуск backend
 	@echo "$(GREEN)Запуск backend...$(NC)"
-	cd backend && uv run python manage.py runserver $(BACKEND_HOST):$(BACKEND_PORT)
+	@kill -9 $$(lsof -t -i:$(BACKEND_DEV_PORT)) 2>/dev/null || true
+	cd backend && uv run python manage.py runserver $(BACKEND_DEV_HOSTNAME):$(BACKEND_DEV_PORT)
 	@echo "$(GREEN)✓ Backend запущен$(NC)"
 
 docker-up: ## Запустить все сервисы
@@ -80,8 +83,8 @@ couchdb-ui: ## Открыть CouchDB UI в браузере
 
 kill-ports: ## Закрыть все порты
 	@echo "$(RED)Закрытие всех портов...$(NC)"
-	@kill -9 $$(lsof -t -i:$(BACKEND_PORT)) || true
-	@kill -9 $$(lsof -t -i:$(FRONTEND_DEV_PORT)) || true
+	@kill -9 $$(lsof -t -i:$(BACKEND_DEV_PORT)) 2>/dev/null || true
+	@kill -9 $$(lsof -t -i:$(FRONTEND_DEV_PORT)) 2>/dev/null || true
 	@echo "$(GREEN)✓ Порты закрыты$(NC)"
 
 # По умолчанию показывать help

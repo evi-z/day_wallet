@@ -1,44 +1,48 @@
 import dotenv from "dotenv";
 import path from "path";
 import { envDefaults, frontendEnvKeys } from "./defaults";
+import type { EnvVariables } from "../src/env.d";
 
-// Путь к корню монорепо (2 уровня вверх от front_app)
-const monorepoRoot = path.resolve(__dirname, "../../../");
+const EnvByNodeEnv = {
+    development: 'dev',
+    production: 'prod',
+} as const
 
 /**
  * Парсер переменных окружения для фронтенда
  *
  * Порядок загрузки (последующие переопределяют предыдущие):
- * 1. Дефолтные значения из defaults.ts
- * 2. Корневой .env (общие переменные для всего монорепо)
- * 3. .env.dev или .env.prod (переменные для окружения)
- *
- * Автоматически добавляет префикс VITE_ к переменным (ограничение Vite)
- * @returns Объект с переменными окружения для build.env
+ * 1. Технические переменные окружения (dev/prod)
+ * 2. Дефолтные значения из defaults.ts
+ * 3. Корневой .env (общие переменные приложения)
  */
-export default function (): ImportMetaEnv {
+export default function (): EnvVariables {
     // Определяем режим (dev/prod)
-    const environment = process.env.QUASAR_ENVIRONMENT || 'dev';
-    const isProduction = environment === 'prod';
+    const environment = (
+        process.env.QUASAR_ENVIRONMENT ||   // Переменная окружения QUASAR_ENVIRONMENT (package.json)
+        EnvByNodeEnv[process.env.NODE_ENV as keyof typeof EnvByNodeEnv] ||   // Через переменную NODE_ENV
+        EnvByNodeEnv.development   // По умолчанию development
+    )
 
-    // 1. Дефолтные значения
+    // 1. Считываем технические переменные окружения (dev/prod)
+    const technicalEnv = dotenv.config({ path: `envs/.env.${environment}` }).parsed || {};
+
+    // 2. Дефолтные значения
     const envVars = { ...envDefaults };
 
-    // 2. Корневой .env (общие переменные)
-    const rootEnv = dotenv.config({
-        path: path.join(monorepoRoot, ".env")
-    }).parsed || {};
+    // Определяем корень root .env файла
+    const rootPath = path.resolve(__dirname, technicalEnv.ENV_PATH || "");
+    const rootEnvPath = path.join(rootPath, ".env");
+    console.log(`[env_parser] Environment: ${environment}, Root Env: "${rootEnvPath}" (ENV_PATH: "${technicalEnv.ENV_PATH}")`);
 
-    // 3. Переменные для окружения (dev/prod)
-    const envSpecific = dotenv.config({
-        path: path.join(monorepoRoot, `.env.${environment}`)
-    }).parsed || {};
+    // 3. Корневой .env (общие переменные)
+    const rootEnv = dotenv.config({ path: rootEnvPath }).parsed || {};
 
     // Объединяем все переменные (порядок важен!)
     const allEnvVars = {
         ...envVars,      // дефолты
-        ...rootEnv,      // корневой .env
-        ...envSpecific,  // .env.dev или .env.prod
+        ...rootEnv,      // Корневой .env (общие переменные)
+        ...technicalEnv,  // Технические переменные (.env.dev или .env.prod)
     };
 
     const viteEnvVars: Record<string, string> = {};
@@ -48,19 +52,12 @@ export default function (): ImportMetaEnv {
         const value = allEnvVars[key];
 
         if (value !== undefined) {
-            // Добавляем префикс VITE_ к ключу
-            const viteKey = `VITE_${key}`;
-
             // Преобразуем все значения в строки
-            viteEnvVars[viteKey] = typeof value !== "string"
+            viteEnvVars[key] = typeof value !== "string"
                 ? JSON.stringify(value)
                 : value;
         }
     });
 
-    // Мета-переменные
-    viteEnvVars.VITE_APP_ENV = environment;
-    viteEnvVars.VITE_IS_PRODUCTION = String(isProduction);
-
-    return viteEnvVars as unknown as ImportMetaEnv;
+    return viteEnvVars as unknown as EnvVariables;
 }

@@ -14,6 +14,9 @@
 
                 <!-- <div>v1.0</div> -->
                 <div class="row items-center q-gutter-x-sm">
+                    <q-btn flat dense rounded no-caps icon="sym_o_database_upload" @click="exportDataBtnClick">
+                        <q-tooltip>Экспорт данных</q-tooltip>
+                    </q-btn>
                     <q-btn v-if="app.state.mode === APP_MODE.local" flat dense rounded no-caps
                         class="row items-center text-yellow-2 q-pr-xs">
                         <q-icon name="sym_o_offline_bolt" size="26px" />
@@ -29,14 +32,6 @@
             </q-toolbar>
         </q-header>
 
-        <!-- <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
-            <q-list>
-                <q-item-label header>
-                    Essential Links
-                </q-item-label>
-            </q-list>
-        </q-drawer> -->
-
         <q-page-container class="page-container">
             <router-view />
         </q-page-container>
@@ -49,6 +44,7 @@ import { useRouter } from 'vue-router';
 import app from 'src/services/app';
 import { APP_MODE } from 'src/services/app/models';
 import { computed } from 'vue';
+import { downloadBlobFile } from 'src/utils/js-utils';
 
 const $router = useRouter();
 
@@ -59,6 +55,27 @@ const logoutBtnLabel = computed(() => {
 const logoutBtnClick = async () => {
     if (app.state.mode === APP_MODE.remote) await app.logout()
     $router.push({ name: PAGES.Login })
+}
+
+const exportDataBtnClick = async () => {
+    try {
+        const res = await app.userDb!.db.allDocs({ include_docs: true });
+
+        const exportData = {
+            docs: res.rows.map((d) => d.doc),
+        }
+        console.log(exportData)
+        
+        // Преобразуем данные в JSON строку с форматированием
+        const jsonString = JSON.stringify(exportData, null, 2);
+        
+        // Создаем Blob с типом text/plain для plain text файла
+        const blob = new Blob([jsonString], { type: 'text/plain;charset=utf-8' });
+        
+        downloadBlobFile(blob, `day_wallet_export_${new Date().toISOString().split('T')[0]}.json`);
+    } catch (error) {
+        console.error('Ошибка при экспорте данных:', error);
+    }
 }
 </script>
 

@@ -27,7 +27,10 @@ export class UserDatabaseService extends DBWithRemoteSync(BaseTypeDatabaseServic
 
     /** Получает все документы периода */
     async fetchPeriodDocuments() {
-        return this._findByType<PeriodDocumentDBData>(UserDBDataType.document)
+        return this._findByType<PeriodDocumentDBData>(
+            UserDBDataType.document,
+            { sort: ['type', 'created_at'] }
+        )
     }
 
     /** Удаляет документ периода и связанные документы */

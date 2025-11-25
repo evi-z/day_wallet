@@ -297,7 +297,7 @@ $login-card-background: rgba(255, 255, 255, 0.95);
 .login-page {
     background: linear-gradient(135deg,
             $primary 0%,
-            darken($primary, 10%) 50%,
+            mix(black, $primary, 90%) 50%,
             $accent 100%);
     position: relative;
     overflow: hidden;
@@ -421,7 +421,7 @@ $login-card-background: rgba(255, 255, 255, 0.95);
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 background: linear-gradient(135deg,
                         $primary 0%,
-                        darken($primary, 5%) 100%);
+                        mix(black, $primary, 95%) 100%);
 
                 &:hover {
                     transform: translateY(-2px);

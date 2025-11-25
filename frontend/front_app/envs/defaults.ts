@@ -1,20 +1,14 @@
+import type { EnvVariables } from "../src/env.d";
+
 /**
  * Дефолтные значения переменных окружения
  * Эти значения будут использованы, если переменная не определена в .env файлах
  */
-export const envDefaults = {
-    // Backend
-    BACKEND_HOST: 'localhost',
-    BACKEND_PORT: '8000',
-    BACKEND_PROTOCOL: 'http',
-
-    // Frontend
+export const envDefaults: EnvVariables = {
+    BACKEND_API_PATH: '/api/v1',
+    BACKEND_DEV_HOSTNAME: '127.0.0.1',
+    BACKEND_DEV_PORT: '8000',
     FRONTEND_DEV_PORT: '9876',
-
-    // CouchDB
-    COUCHDB_HOST: 'localhost',
-    COUCHDB_PORT: '5984',
-    COUCHDB_PROTOCOL: 'http',
 } as const;
 
 /**
@@ -22,6 +16,4 @@ export const envDefaults = {
  * [WARN]: Эти переменные получат префикс VITE_ и будут доступны коде
  */
 export const frontendEnvKeys = Object.keys(envDefaults) as Array<keyof typeof envDefaults>;
-
-export type EnvVariables = typeof envDefaults;
 
