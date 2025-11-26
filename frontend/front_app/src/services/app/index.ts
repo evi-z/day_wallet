@@ -58,16 +58,22 @@ class AppService {
 
             const remoteDB = new PouchDB(`http://localhost:5984/${this.user!.db_name}`, {
                 skip_setup: true,
+                auth: {
+                    username: userInfo.db_username,
+                    password: userInfo.db_password
+                },
+                // Явно отключаем credentials (cookies) для cross-origin запросов
+                // т.к. используем Basic Auth через заголовок Authorization
                 fetch: function (url, opts) {
                     opts = opts || {}
-                    opts.credentials = 'include' // Включаем cookies в запросы
+                    opts.credentials = 'omit' // Отключаем cookies для CORS с origins = *
                     return PouchDB.fetch(url, opts)
                 }
             })
 
             // Выполняем аутентификацию
-            const loginResult = await remoteDB.logIn(userInfo.db_username, userInfo.db_password)
-            console.log('Remote DB logged in:', loginResult)
+            // const loginResult = await remoteDB.logIn(userInfo.db_username, userInfo.db_password)
+            // console.log('Remote DB logged in:', loginResult)
 
             // Запускаем синхронизацию
             await this.userDb!.initSyncWithRemote(remoteDB)
