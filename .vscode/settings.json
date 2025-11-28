@@ -1,6 +1,6 @@
 {
     "ruff.interpreter": [
-        "${workspaceFolder}/backend/.venv/Scripts/python.exe"
+        "${workspaceFolder}/backend/.venv/bin/python"
     ],
     "[python]": {
         "editor.formatOnSave": true,
