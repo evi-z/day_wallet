@@ -1,19 +1,53 @@
 services:
   dw-couchdb:
-      build:
-        context: ./couchdb
-        dockerfile: Dockerfile
-      container_name: dw-couchdb
-      restart: always
-      ports:
-        - "5984:5984"
-      environment:
-        - COUCHDB_USER=admin
-        - COUCHDB_PASSWORD=adminpass
-      volumes:
-        - ./data/couchdb:/opt/couchdb/data 
-      networks:
+    build:
+      context: ./couchdb
+      dockerfile: Dockerfile
+    container_name: dw-couchdb
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - COUCHDB_USER=${COUCHDB_ADMIN_USERNAME}
+      - COUCHDB_PASSWORD=${COUCHDB_ADMIN_PASSWORD}
+    expose:
+      - "${COUCHDB_PORT}"
+    volumes:
+      - ./data/couchdb:/opt/couchdb/data 
+    networks:
         - main
+
+  dw-backend:
+    container_name: dw-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - MAIN_BACKEND_CONTAINER=1
+    depends_on:
+      - dw-couchdb
+    networks:
+      - main
+
+  dw-frontend:
+    container_name: dw-frontend
+    build:
+      context: .  # For copy .env file
+      dockerfile: ./frontend/Dockerfile
+    restart: always
+    depends_on:
+      - dw-backend
+    volumes:
+      - ./backend/static:/usr/share/nginx/html/site/static
+    ports:
+      - "8122:80"
+    networks:
+      - main
+    
     
 networks:
   main:
+    name: dw-network-main

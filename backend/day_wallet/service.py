@@ -9,8 +9,11 @@ COUCHDB_USERS_URL = f"{settings.COUCHDB_URL}/_users"
 
 
 class AppUserService:
+    class CouchDBUserNotFoundError(Exception):
+        pass
+
     @classmethod
-    def _create_couchdb_user(cls, user: AppUser, password: str):
+    def _create_or_update_couchdb_user(cls, user: AppUser, password: str):
         user_doc = {
             "_id": f"org.couchdb.user:{user.username}",
             "name": user.username,
@@ -18,6 +21,13 @@ class AppUserService:
             "roles": ["user"],
             "type": "user",
         }
+        
+        # Если пользователь существует, добавляем _rev для обновления
+        try:
+            existing_doc = cls._get_couchdb_user(user)
+            user_doc["_rev"] = existing_doc["_rev"]
+        except cls.CouchDBUserNotFoundError:
+            pass  # Пользователь не существует, создаём нового
 
         response = httpx.put(
             f"{COUCHDB_USERS_URL}/org.couchdb.user:{user.username}",
@@ -25,9 +35,10 @@ class AppUserService:
             auth=(settings.COUCHDB_ADMIN_USER, settings.COUCHDB_ADMIN_PASSWORD),
         )
 
+        # 201 - создан/обновлён (CouchDB возвращает 201 для обоих случаев)
         if response.status_code != 201:
             raise Exception(
-                f"Ошибка при создании базы данных пользователя в CouchDB: {response.text}"
+                f"Ошибка при создании/обновлении пользователя в CouchDB: {response.text}"
             )
 
     @classmethod
@@ -42,7 +53,7 @@ class AppUserService:
             first_name=data["name"],
         )
 
-        cls._create_couchdb_user(user, data["password"])
+        cls._create_or_update_couchdb_user(user, data["password"])
 
         return user
 
@@ -77,7 +88,7 @@ class AppUserService:
             auth=(settings.COUCHDB_ADMIN_USER, settings.COUCHDB_ADMIN_PASSWORD),
         )
         if response.status_code != 200:
-            raise Exception(f"Пользователь не найден в CouchDB: {response.text}")
+            raise cls.CouchDBUserNotFoundError(f"Пользователь не найден в CouchDB: {response.text}")
 
         print("CouchDB user:", response.json())
         return response.json()
