@@ -14,15 +14,22 @@ from backend_app.responses import SuccessResponse
 
 
 class RegisterView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     @transaction.atomic
     def post(self, request: Request):
-        AppUserService.register_user(request.data)
+        try:
+            AppUserService.register_user(request.data)
+        except Exception as e:
+            traceback.print_exc()
+            raise e
+
         return SuccessResponse()
 
 
 class LoginView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     @transaction.atomic

@@ -106,5 +106,6 @@ class AppUserService:
             raise AuthError("Неверный логин или пароль")
 
         cls._get_couchdb_user(user)  # Raise Exception if user not found in CouchDB
+        # cls._update_couchdb_user_password(user, generate_db_password())
         auth_token, created = Token.objects.get_or_create(user=user)
         return user, auth_token

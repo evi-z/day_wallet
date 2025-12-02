@@ -3,7 +3,6 @@ import { AppDatabaseService } from "src/services/database/service_cls/app_db"
 import { UserDatabaseService } from "src/services/database/service_cls/user_db"
 import { initPouchDB } from "../database/service_cls/base"
 import { APP_MODE, AppState, useAppState } from "./models"
-import { getCouchDBURL } from "./utils"
 import api from "src/api"
 import PouchDB from 'pouchdb'
 
@@ -56,7 +55,7 @@ class AppService {
             // const couchdbUrl = getCouchDBURL(this.user!.db_name);
             // console.log('CouchDB URL:', couchdbUrl)
 
-            const remoteDB = new PouchDB(`http://localhost:5984/${this.user!.db_name}`, {
+            const remoteDB = new PouchDB(`/db/${this.user!.db_name}`, {
                 skip_setup: true,
                 auth: {
                     username: userInfo.db_username,
