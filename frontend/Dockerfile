@@ -2,7 +2,7 @@
 FROM node:22.17.0 as builder
 
 # Устанавливаем pnpm
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.9
 
 # Устанавливаем рабочую директорию в контейнере
 WORKDIR /app
@@ -12,15 +12,17 @@ COPY .env ./
 
 # Копируем файлы package.json и pnpm-lock.yaml для установки зависимостей
 COPY frontend/front_app/package.json ./
+COPY frontend/front_app/pnpm-lock.yaml ./
+COPY frontend/front_app/.npmrc ./
 
 # Устанавливаем зависимости с помощью pnpm
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 # Копируем остальные исходные файлы приложения
 COPY frontend/front_app/ /app/
 
 # Собираем приложение для production
-RUN pnpm build
+RUN pnpm run build
 FROM nginx:stable-alpine
 
 # Устанавливаем часовой пояс
