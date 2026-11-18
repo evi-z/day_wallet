@@ -4,7 +4,9 @@
             @keydown.enter.prevent="expanded = !expanded" @keydown.space.prevent="expanded = !expanded">
             <div class="info-card__heading">
                 <div class="info-card__title">{{ title }}</div>
-                <div v-if="!expanded && summary" class="info-card__summary">{{ summary }}</div>
+                <div v-if="!expanded && ($slots.summary || summary)" class="info-card__summary">
+                    <slot name="summary">{{ summary }}</slot>
+                </div>
             </div>
             <q-space />
             <q-icon :name="expanded ? 'sym_o_expand_less' : 'sym_o_expand_more'" size="20px"
@@ -64,13 +66,13 @@ const expanded = defineModel<boolean>({ default: false })
 }
 
 .info-card__summary {
-    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
     margin-top: 1px;
     color: #6b7280;
     font-size: 10px;
     line-height: 1.3;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .info-card__chevron {

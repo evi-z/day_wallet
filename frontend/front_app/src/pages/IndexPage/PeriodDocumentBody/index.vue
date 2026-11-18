@@ -36,7 +36,18 @@
 
         <!-- Итоги периода -->
         <section class="grid-item-totals">
-            <InfoCard v-model="totalsOpen" title="Итоги периода" :summary="totalsCaption">
+            <InfoCard v-model="totalsOpen" title="Итоги периода">
+                <template #summary>
+                    <q-chip dense class="summary-chip">
+                        <span class="summary-chip__label">потрачено</span>
+                        <span class="summary-chip__value">{{ formatMoney(totals.spent) }}</span>
+                    </q-chip>
+                    <q-chip dense class="summary-chip"
+                        :class="totals.remaining < 0 ? 'summary-chip--negative' : 'summary-chip--positive'">
+                        <span class="summary-chip__label">осталось</span>
+                        <span class="summary-chip__value">{{ formatMoney(totals.remaining) }}</span>
+                    </q-chip>
+                </template>
                 <div class="stat-grid">
                     <div class="stat-tile"><span>Потрачено</span><strong>{{ formatMoney(totals.spent) }}</strong></div>
                     <div class="stat-tile"><span>Осталось</span><strong>{{ formatMoney(totals.remaining) }}</strong></div>
@@ -90,7 +101,17 @@
 
         <!-- Параметры периода -->
         <section class="grid-item-params">
-            <InfoCard v-model="paramsOpen" title="Параметры периода" :summary="paramsCaption">
+            <InfoCard v-model="paramsOpen" title="Параметры периода">
+                <template #summary>
+                    <q-chip dense class="summary-chip">
+                        <span class="summary-chip__label">бюджет</span>
+                        <span class="summary-chip__value">{{ formatMoney(params.budget) }}</span>
+                    </q-chip>
+                    <q-chip dense class="summary-chip">
+                        <span class="summary-chip__label">выходные</span>
+                        <span class="summary-chip__value">{{ formatMoney(params.weekend) }}</span>
+                    </q-chip>
+                </template>
                 <div class="params-form">
                     <MoneyInput v-model="periodBudget" label="Бюджет периода" />
                     <MoneyInput v-model="weekendPlan" label="План на выходные" />
@@ -422,14 +443,6 @@ const progressRaw = computed(() => {
     return (totals.value.spent / params.value.budget) * 100
 })
 
-const totalsCaption = computed(() => {
-    return `потрачено ${formatMoney(totals.value.spent)} · осталось ${formatMoney(totals.value.remaining)}`
-})
-
-const paramsCaption = computed(() => {
-    return `бюджет ${formatMoney(params.value.budget)} · выходные ${formatMoney(params.value.weekend)}`
-})
-
 const periodStatus = computed<'before' | 'current' | 'after'>(() => {
     const today = currentDate.value.iso
     const from = AppDate.fromFriendlyFormat(document.from_date).iso
@@ -750,6 +763,47 @@ watch(() => [document.from_date, document.to_date], () => {
     margin-top: 4px;
     font-size: 10px;
     color: #6b7280;
+}
+
+.summary-chip {
+    height: 22px;
+    border-radius: 7px;
+    background: #f3f6f4;
+    color: #374151;
+    font-size: 10px;
+}
+
+.summary-chip :deep(.q-chip__content) {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.summary-chip__label {
+    color: #6b7280;
+    font-size: 10px;
+}
+
+.summary-chip__value {
+    color: #111827;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.summary-chip--positive {
+    background: #e9f4ef;
+}
+
+.summary-chip--positive .summary-chip__value {
+    color: #065f46;
+}
+
+.summary-chip--negative {
+    background: #fdecec;
+}
+
+.summary-chip--negative .summary-chip__value {
+    color: #b91c1c;
 }
 
 .stat-grid {
