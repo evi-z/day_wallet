@@ -1,80 +1,71 @@
 <template>
     <div class="page-container">
-        <!-- Исходные данные -->
-        <div class="grid-item-source">
-            <q-card class="full-height">
-                <q-card-section class="card-title-section">
-                    <div class="text-subtitle1 card-title-text">Исходные данные</div>
-                </q-card-section>
-                <!-- <q-separator></q-separator> -->
-                <q-card-section class="no-padding card-table-section">
-                    <q-table square flat class="full-height page-table" :columns="PeriodDocInitAndCurrentDataColumns"
-                        :rows="PeriodDocInitDataRows" hide-header dense :rows-per-page="[0]" row-key="name"
-                        v-model:pagination="initCurrentPagination" hide-bottom separator="cell">
-                        <template #body="props">
+        <!-- Сегодня -->
+        <section class="grid-item-today">
+            <q-card flat bordered class="today-card">
+                <q-card-section class="today-main">
+                    <div class="today-head">
+                        <div>
+                            <div class="today-title">{{ cockpit.title }}</div>
+                            <div class="today-date">{{ cockpit.subtitle }}</div>
+                        </div>
+                        <span class="today-status" :class="{ 'today-status--negative': cockpit.statusNegative }">
+                            {{ cockpit.statusLabel }}
+                        </span>
+                    </div>
 
-                            <q-tr :props="props">
-                                <q-td key="label" :props="props">
-                                    {{ props.row.label }}
-                                </q-td>
+                    <div class="today-stats">
+                        <div v-for="stat in cockpit.stats" :key="stat.label" class="today-stat">
+                            <span class="today-stat__label">{{ stat.label }}</span>
+                            <span class="today-stat__value" :class="{ 'text-negative': stat.negative }">
+                                {{ stat.value }}
+                            </span>
+                        </div>
+                    </div>
 
-                                <TableCell td-key="value" :td-props="props" :cell-type="props.row.cellType"
-                                    align-content="right" :cell-format="props.row.cellFormat"
-                                    :model-value="initDataModel(props.row.name)"
-                                    @update:model-value="(value) => handleUpdateInitDataModel(props.row.name, value)" />
-                            </q-tr>
-                        </template>
-                    </q-table>
+                    <q-linear-progress :value="cockpit.progress" size="5px" rounded
+                        :color="cockpit.progressNegative ? 'negative' : 'primary'" track-color="grey-3" />
+                    <div class="today-progress-caption">
+                        <span>{{ cockpit.progressCaption }}</span>
+                        <span>{{ cockpit.progressRight }}</span>
+                    </div>
                 </q-card-section>
+
+                <q-separator />
+
+                <q-expansion-item class="today-totals" dense label="Итоги периода" :caption="totalsCaption">
+                    <div class="stat-grid">
+                        <div class="stat-tile"><span>Потрачено</span><strong>{{ formatMoney(totals.spent) }}</strong></div>
+                        <div class="stat-tile"><span>Осталось</span><strong>{{ formatMoney(totals.remaining) }}</strong></div>
+                        <div class="stat-tile"><span>Дней</span><strong>{{ totals.days }}</strong></div>
+                        <div class="stat-tile"><span>Выходных / будних</span><strong>{{ totals.weekends }} / {{ totals.weekdays }}</strong></div>
+                        <div class="stat-tile"><span>Потрачено выходные</span><strong>{{ formatMoney(totals.spentWeekends) }}</strong></div>
+                        <div class="stat-tile"><span>Потрачено будни</span><strong>{{ formatMoney(totals.spentWeekdays) }}</strong></div>
+                    </div>
+                </q-expansion-item>
             </q-card>
-        </div>
-        <!-- Текущие данные -->
-        <div class="grid-item-current">
-            <q-card class="full-height">
-                <q-card-section class="card-title-section">
-                    <div class="text-subtitle1 card-title-text">Текущие данные</div>
-                </q-card-section>
-                <!-- <q-separator></q-separator> -->
-                <q-card-section class="no-padding card-table-section">
-                    <q-table square flat class="full-height page-table" :columns="PeriodDocInitAndCurrentDataColumns"
-                        :rows="PeriodDocCurrentDataRows" hide-header dense :rows-per-page="[0]" row-key="name"
-                        v-model:pagination="initCurrentPagination" hide-bottom separator="cell">
-                        <template #body="props">
-                            <q-tr :props="props">
-                                <q-td key="label" :props="props">
-                                    {{ props.row.label }}
-                                </q-td>
+        </section>
 
-                                <TableCell td-key="value" :td-props="props" :cell-type="props.row.cellType"
-                                    :cell-format="props.row.cellFormat" align-content="right"
-                                    v-model="currentDataCalcValues[props.row.name as keyof PeriodDocCurrentRowValues]" />
-
-                            </q-tr>
-                        </template>
-                    </q-table>
-                </q-card-section>
-            </q-card>
-        </div>
-
-        <!-- Результат -->
-        <div class="grid-item-result">
+        <!-- Календарь -->
+        <section class="grid-item-result">
             <q-card class="full-height">
                 <q-card-section class="card-title-section">
                     <div class="text-subtitle1 card-title-text">
                         <span>Календарь</span>
+                        <span class="calendar-dates">{{ document.from_date }} – {{ document.to_date }}</span>
                         <q-space />
-                        <div class="row items-center q-gutter-x-sm q-pr-sm">
-                            <q-btn icon="calendar_month" flat round dense size="sm" @click="handleEdit" />
-                        </div>
+                        <q-btn icon="calendar_month" flat round dense size="sm" @click="handleEdit" />
                     </div>
                 </q-card-section>
                 <q-card-section class="no-padding card-table-section">
                     <q-table square flat class="full-height page-table" :columns="PeriodDocCalendarDataColumns"
                         :row-key="PeriodDocCalendarColumn.date_friendly" :rows="calendarRows" dense :rows-per-page="[0]"
-                        v-model:pagination="initCurrentPagination" hide-bottom separator="cell">
+                        v-model:pagination="initCurrentPagination" hide-bottom separator="none">
                         <template #body="props">
-                            <q-tr :props="props"
-                                :class="{ 'bg-red-2': props.row.date.isWeekend(), 'bg-green-2': props.row.date.isToday() }">
+                            <q-tr :props="props" :class="{
+                                'is-weekend': props.row.date.isWeekend(),
+                                'is-today': props.row.date.isToday(),
+                            }">
                                 <q-td :key="PeriodDocCalendarColumn.date_friendly" :props="props">
                                     {{ props.row.date.friendly }}
                                 </q-td>
@@ -93,7 +84,28 @@
                     </q-table>
                 </q-card-section>
             </q-card>
-        </div>
+        </section>
+
+        <!-- Параметры периода -->
+        <section class="grid-item-params">
+            <q-card flat bordered class="params-card">
+                <q-expansion-item dense label="Параметры периода" :caption="paramsCaption">
+                    <q-card-section class="params-form">
+                        <MoneyInput v-model="periodBudget" label="Бюджет периода" />
+                        <MoneyInput v-model="weekendPlan" label="План на выходные" />
+                        <div class="params-summary">
+                            <div>Будни: {{ formatMoney(params.initialPlan) }} / день</div>
+                            <div>Выходные: {{ formatMoney(params.weekend) }} / день</div>
+                            <div class="text-caption text-grey-7">
+                                {{ params.totalDays }} {{ plural(params.totalDays, 'день', 'дня', 'дней') }} ·
+                                {{ params.weekendDays }} {{ plural(params.weekendDays, 'выходной', 'выходных', 'выходных') }} ·
+                                {{ params.weekdayDays }} {{ plural(params.weekdayDays, 'будний', 'будних', 'будних') }}
+                            </div>
+                        </div>
+                    </q-card-section>
+                </q-expansion-item>
+            </q-card>
+        </section>
         <!-- Редактирование периода -->
         <q-dialog v-model="editState.open">
             <q-card class="edit-period-card">
@@ -142,20 +154,17 @@
 <script setup lang="ts">
 import {
     PeriodDocCalendarDataColumns,
-    PeriodDocInitAndCurrentDataColumns,
-    PeriodDocCurrentDataRows,
-    PeriodDocInitDataRows,
     PeriodDocCalendarColumn,
     PeriodDocInitCalcRowValues,
     PeriodDocCurrentRowValues,
     PeriodDocCalendarRow,
 } from './models';
 import { onBeforeUnmount, onMounted, ref, shallowRef, computed, triggerRef, reactive, watch } from 'vue';
-import { PeriodDocumentDBData, PeriodDocumentMainValuesData } from 'src/models/database';
+import { PeriodDocumentDBData } from 'src/models/database';
 import { AppDate } from 'src/utils/date';
 import { getPeriodDocumentCalendarDataRows } from './funs';
-import { PeriodDocInitDataFields, PeriodDocInitDataFieldsMap } from 'src/models/period_doc';
 import TableCell from 'src/components/TableCell/index.vue';
+import MoneyInput from 'src/components/MoneyInput/index.vue';
 import { useDocumentCalendarFactValuesRef, useDocumentMainValuesRef } from 'src/services/database/wrappers/period_docs';
 import { calculatePeriod } from 'src/domain/period_calc';
 import { PeriodCalendarModel } from 'src/components/PeriodCalendar/models';
@@ -187,6 +196,17 @@ const currentDate = ref<AppDate>(AppDate.today())  // Текущая дата
 const documentMainDBValues = useDocumentMainValuesRef(document)  // Основные значения документа
 const calendarFactDBValues = useDocumentCalendarFactValuesRef(document)  // Факты календаря
 
+/** Редактируемые значения периода для формы параметров */
+const periodBudget = computed({
+    get: () => Number(documentMainDBValues.value.total_budget) || 0,
+    set: (value: number) => { documentMainDBValues.value.total_budget = value },
+})
+
+const weekendPlan = computed({
+    get: () => Number(documentMainDBValues.value.weekend_plan) || 0,
+    set: (value: number) => { documentMainDBValues.value.weekend_plan = value },
+})
+
 const initDataCalcValues = ref<PeriodDocInitCalcRowValues>({} as PeriodDocInitCalcRowValues)  // Калькулируемые исходные данные
 const currentDataCalcValues = ref<PeriodDocCurrentRowValues>({} as PeriodDocCurrentRowValues)  // Текущие данные
 
@@ -199,24 +219,6 @@ documentMainDBValues.bindValuesWatcher(async () => {
 calendarFactDBValues.bindValuesWatcher(async () => {
     recalcDocumentCalcValues()
 })
-
-/** Получение модели значения исходных данных */
-const initDataModel = computed(() => {
-    return function (name: PeriodDocInitDataFieldsMap) {
-        if (
-            [PeriodDocInitDataFields.total_budget, PeriodDocInitDataFields.weekend_plan].includes(name)
-        ) return documentMainDBValues.value[name as keyof PeriodDocumentMainValuesData]
-        return initDataCalcValues.value[name as keyof PeriodDocInitCalcRowValues]
-    }
-})
-
-/** Обновление модели значения исходных данных */
-const handleUpdateInitDataModel = (name: PeriodDocInitDataFieldsMap, value: number) => {
-    if (
-        [PeriodDocInitDataFields.total_budget, PeriodDocInitDataFields.weekend_plan].includes(name)
-    ) documentMainDBValues.value[name as keyof PeriodDocumentMainValuesData] = value
-    else initDataCalcValues.value[name as keyof PeriodDocInitCalcRowValues] = value
-}
 
 let dateCheckTimer: number | undefined
 
@@ -374,9 +376,134 @@ const formatMoney = (value: number) => {
     return Intl.NumberFormat('ru-RU', {
         style: 'currency',
         currency: 'RUB',
+        minimumFractionDigits: 0,
         maximumFractionDigits: 2,
     }).format(value)
 }
+
+const plural = (n: number, one: string, few: string, many: string) => {
+    const mod10 = n % 10
+    const mod100 = n % 100
+    if (mod10 === 1 && mod100 !== 11) return one
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few
+    return many
+}
+
+const todayStats = computed(() => ({
+    plan: Number(currentDataCalcValues.value.plan_for_today) || 0,
+    spent: Number(currentDataCalcValues.value.spent_today) || 0,
+    remaining: Number(currentDataCalcValues.value.remaining_today) || 0,
+}))
+
+const totals = computed(() => ({
+    spent: Number(currentDataCalcValues.value.total_spent_actual) || 0,
+    remaining: Number(currentDataCalcValues.value.total_remaining) || 0,
+    days: Number(currentDataCalcValues.value.days_remaining) || 0,
+    weekends: Number(currentDataCalcValues.value.weekends_remaining) || 0,
+    weekdays: Number(currentDataCalcValues.value.weekdays_remaining) || 0,
+    spentWeekends: Number(currentDataCalcValues.value.spent_on_weekends) || 0,
+    spentWeekdays: Number(currentDataCalcValues.value.spent_on_weekdays) || 0,
+}))
+
+const params = computed(() => ({
+    budget: periodBudget.value,
+    weekend: weekendPlan.value,
+    initialPlan: Number(initDataCalcValues.value.initial_plan) || 0,
+    totalDays: Number(initDataCalcValues.value.total_days) || 0,
+    weekendDays: Number(initDataCalcValues.value.weekend_days) || 0,
+    weekdayDays: Number(initDataCalcValues.value.weekday_days) || 0,
+}))
+
+const progressRaw = computed(() => {
+    if (params.value.budget <= 0) return 0
+    return (totals.value.spent / params.value.budget) * 100
+})
+
+const totalsCaption = computed(() => {
+    return `потрачено ${formatMoney(totals.value.spent)} · осталось ${formatMoney(totals.value.remaining)}`
+})
+
+const paramsCaption = computed(() => {
+    return `бюджет ${formatMoney(params.value.budget)} · выходные ${formatMoney(params.value.weekend)}`
+})
+
+const periodStatus = computed<'before' | 'current' | 'after'>(() => {
+    const today = currentDate.value.iso
+    const from = AppDate.fromFriendlyFormat(document.from_date).iso
+    const to = AppDate.fromFriendlyFormat(document.to_date).iso
+    if (today < from) return 'before'
+    if (today > to) return 'after'
+    return 'current'
+})
+
+const cockpit = computed(() => {
+    const progress = Math.min(100, Math.max(0, progressRaw.value)) / 100
+    const progressNegative = progressRaw.value > 100
+
+    if (periodStatus.value === 'current') {
+        return {
+            title: 'Сегодня',
+            subtitle: currentDate.value.friendly,
+            statusLabel: todayStats.value.remaining < 0 ? 'перерасход' : 'в рамках плана',
+            statusNegative: todayStats.value.remaining < 0,
+            stats: [
+                { label: 'План', value: formatMoney(todayStats.value.plan), negative: false },
+                { label: 'Потрачено', value: formatMoney(todayStats.value.spent), negative: false },
+                {
+                    label: 'Осталось',
+                    value: formatMoney(todayStats.value.remaining),
+                    negative: todayStats.value.remaining < 0,
+                },
+            ],
+            progress,
+            progressNegative,
+            progressCaption: `Потрачено ${Math.round(progressRaw.value)}% бюджета`,
+            progressRight: `Осталось ${totals.value.days} дн.`,
+        }
+    }
+
+    if (periodStatus.value === 'after') {
+        return {
+            title: 'Период завершён',
+            subtitle: `${document.from_date} – ${document.to_date}`,
+            statusLabel: totals.value.remaining < 0 ? 'перерасход' : 'в бюджете',
+            statusNegative: totals.value.remaining < 0,
+            stats: [
+                { label: 'Потрачено', value: formatMoney(totals.value.spent), negative: false },
+                {
+                    label: 'Осталось',
+                    value: formatMoney(totals.value.remaining),
+                    negative: totals.value.remaining < 0,
+                },
+                { label: 'Бюджет', value: formatMoney(params.value.budget), negative: false },
+            ],
+            progress,
+            progressNegative,
+            progressCaption: `Потрачено ${Math.round(progressRaw.value)}% бюджета`,
+            progressRight: 'Период закрыт',
+        }
+    }
+
+    return {
+        title: 'Период ещё не начался',
+        subtitle: `${document.from_date} – ${document.to_date}`,
+        statusLabel: 'запланирован',
+        statusNegative: false,
+        stats: [
+            { label: 'Бюджет', value: formatMoney(params.value.budget), negative: false },
+            {
+                label: 'Дней',
+                value: `${params.value.totalDays} ${plural(params.value.totalDays, 'день', 'дня', 'дней')}`,
+                negative: false,
+            },
+            { label: 'План будней', value: `${formatMoney(params.value.initialPlan)} / день`, negative: false },
+        ],
+        progress: 0,
+        progressNegative: false,
+        progressCaption: 'Период ещё не начался',
+        progressRight: 'До начала',
+    }
+})
 
 const handleSaveEdit = async () => {
     if (!editCanSave.value) return
@@ -419,113 +546,256 @@ watch(() => [document.from_date, document.to_date], () => {
     gap: 8px;
     height: 100%;
     min-height: 0;
-
-    // Мобильная версия - вертикальная компоновка
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(320px, 1fr);
+    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
-        "source"
-        "current"
-        "result";
+        "result today"
+        "result params";
+}
 
-    .grid-item-source,
-    .grid-item-current,
-    .grid-item-result {
-        min-width: 0;
-        min-height: 0;
-    }
-
-    .grid-item-source {
-        grid-area: source;
-    }
-
-    .grid-item-current {
-        grid-area: current;
-    }
-
-    .grid-item-result {
-        grid-area: result;
-    }
-
-    // Десктопная версия - двухколоночная компоновка
-    @media (min-width: 1024px) {
-        grid-template-columns: minmax(0, 1fr) 320px;
-        grid-template-rows: auto minmax(0, 1fr);
-        grid-template-areas:
-            "result source"
-            "result current";
-    }
-
-    @media (min-width: 1440px) {
+@media (min-width: 1440px) {
+    .page-container {
         grid-template-columns: minmax(0, 1fr) 360px;
     }
+}
 
-    // На телефоне данные показываем целиком, а календарь оставляем
-    // прокручиваемой областью фиксированной высоты.
-    @media (max-width: 1023px) {
+@media (max-width: 1023px) {
+    .page-container {
         height: auto;
+        grid-template-columns: minmax(0, 1fr);
         grid-template-rows: auto auto auto;
         grid-template-areas:
+            "today"
             "result"
-            "current"
-            "source";
-
-        .grid-item-result {
-            height: 56vh;
-            min-height: 340px;
-        }
-
-        .grid-item-source .q-card,
-        .grid-item-current .q-card {
-            height: auto !important;
-        }
-
-        .grid-item-source .card-table-section,
-        .grid-item-current .card-table-section {
-            height: auto;
-            overflow: visible;
-        }
-
-        .grid-item-source .page-table,
-        .grid-item-current .page-table {
-            height: auto !important;
-        }
-
-        .grid-item-source .q-table__middle,
-        .grid-item-current .q-table__middle {
-            overflow: visible;
-            max-height: none;
-        }
+            "params";
     }
 
-    .card-title-section {
-        height: 34px;
-        padding: 0;
+    .grid-item-result {
+        height: 56vh;
+        min-height: 340px;
+    }
+}
 
-        .card-title-text {
-            height: 100%;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            padding-left: 12px;
-            font-size: 13px;
-        }
+.grid-item-result {
+    grid-area: result;
+    min-width: 0;
+    min-height: 0;
+}
+
+.grid-item-today {
+    grid-area: today;
+    min-width: 0;
+}
+
+.grid-item-params {
+    grid-area: params;
+    align-self: start;
+    min-width: 0;
+}
+
+.card-title-section {
+    height: 34px;
+    padding: 0;
+}
+
+.card-title-text {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    min-width: 0;
+    padding-left: 12px;
+    font-size: 13px;
+}
+
+.calendar-dates {
+    margin-left: 8px;
+    font-size: 11px;
+    font-weight: 400;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.card-table-section {
+    height: calc(100% - 34px);
+    min-height: 0;
+    overflow: hidden;
+}
+
+.page-table {
+    border-top: 1px solid #eef2f0;
+
+    :deep(thead tr) {
+        height: 28px;
     }
 
-    .card-table-section {
-        height: calc(100% - 34px);
-        min-height: 0;
-        overflow: hidden;
-
-        .page-table {
-            border-top: 1px solid $table-border-color;
-            border-bottom-left-radius: $generic-border-radius;
-            border-bottom-right-radius: $generic-border-radius;
-
-            :deep(tr:last-child td) {
-                border-bottom: 1px solid $table-border-color;
-            }
-        }
+    :deep(thead th) {
+        background: transparent;
+        border-bottom: 1px solid #eef2f0;
+        color: #6b7280;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
     }
+
+    :deep(tbody td) {
+        padding: 4px 8px;
+        border-right: none;
+        border-left: none;
+        border-bottom: 1px solid #eef2f0;
+    }
+
+    :deep(tbody tr:last-child td) {
+        border-bottom: none;
+    }
+
+    :deep(tbody tr.is-weekend) {
+        background: rgba(185, 28, 28, 0.035);
+    }
+
+    :deep(tbody tr.is-today) {
+        background: rgba(6, 95, 70, 0.07);
+        box-shadow: inset 3px 0 0 #065f46;
+    }
+
+    :deep(tbody tr:hover) {
+        background: rgba(6, 95, 70, 0.05);
+    }
+
+    :deep(td.cell-input .q-field__control) {
+        background: transparent;
+    }
+
+    :deep(td.cell-input .q-field__control:hover) {
+        background: rgba(6, 95, 70, 0.05);
+    }
+}
+
+.today-card,
+.params-card {
+    border-radius: 10px;
+}
+
+.today-main {
+    padding: 12px;
+}
+
+.today-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.today-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.today-date {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.today-status {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(6, 95, 70, 0.09);
+    color: #065f46;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.today-status--negative {
+    background: rgba(185, 28, 28, 0.08);
+    color: #b91c1c;
+}
+
+.today-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 10px 0 8px;
+}
+
+.today-stat__label {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 10px;
+    color: #6b7280;
+}
+
+.today-stat__value {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    white-space: nowrap;
+}
+
+.today-progress-caption {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+    font-size: 10px;
+    color: #6b7280;
+}
+
+.today-totals :deep(.q-item) {
+    min-height: 38px;
+}
+
+.today-totals :deep(.q-item__label--caption),
+.params-card :deep(.q-item__label--caption) {
+    font-size: 10px;
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 10px 12px 12px;
+}
+
+.stat-tile {
+    min-width: 0;
+    padding: 6px 8px;
+    background: #f8faf9;
+    border: 1px solid #eef2f0;
+    border-radius: 8px;
+}
+
+.stat-tile span {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+
+.stat-tile strong {
+    display: block;
+    margin-top: 2px;
+    overflow: hidden;
+    color: #111827;
+    font-size: 12px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.params-form {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+}
+
+.params-summary {
+    display: grid;
+    gap: 2px;
+    font-size: 12px;
+    color: #374151;
 }
 </style>
