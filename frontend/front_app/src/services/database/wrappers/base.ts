@@ -103,11 +103,36 @@ export const useDatabaseDocumentRef = <T extends object, A extends readonly stri
         }
     }
 
-    const saveToDB = async () => {
+    /** Сохранения одного документа идут строго по очереди: иначе быстрые правки
+     *  двух полей используют одну и ту же _rev и одна из них теряется с 409. */
+    let saveChain: Promise<void> = Promise.resolve()
+
+    const saveOnce = async () => {
         const response = await options.saveFn(  // Вызываем колбек сохранения значений в БД
             { ...valueRef.value, ...metadata.value } as T
         )
         metadata.value._rev = response.rev  // Обновляем ревизию в метаданных
+    }
+
+    const saveToDB = () => {
+        saveChain = saveChain.then(async () => {
+            try {
+                await saveOnce()
+            } catch (error) {
+                if ((error as { status?: number } | null)?.status !== 409) throw error
+
+                // Конфликт ревизий: перечитываем документ ради актуальной _rev.
+                // Содержимое остаётся локальным (last-write-wins); выбор при
+                // конфликте появится отдельно.
+                const fresh = await options.initFn()
+                metadata.value._rev = (fresh as { _rev?: string })._rev as string
+                await saveOnce()
+            }
+        }).catch((error) => {
+            console.error('Error saving document to DB:', error)
+        })
+
+        return saveChain
     }
 
     return extendRef(valueRef, {
