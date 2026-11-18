@@ -30,7 +30,7 @@
 
         <q-drawer v-if="isDesktop" v-model="drawerVisible" show-if-above :mini="mini" :width="216"
             :mini-width="56" class="app-drawer" :breakpoint="0">
-            <div class="app-drawer__inner">
+            <div class="app-drawer__inner" :class="{ 'app-drawer__inner--mini': mini }">
                 <q-list class="app-nav">
                     <q-item v-for="item in navItems" :key="item.name" clickable :to="{ name: item.name }" exact
                         class="app-nav__item" active-class="app-nav__item--active">
@@ -47,17 +47,6 @@
                 <q-space />
 
                 <q-separator class="app-drawer__sep" />
-
-                <div class="app-drawer__meta">
-                    <div class="app-drawer__meta-row">
-                        <q-icon :name="syncIcon" :color="syncColor" size="18px" />
-                        <span class="ellipsis">{{ syncLabel }}</span>
-                    </div>
-                    <div class="app-drawer__meta-row">
-                        <q-icon :name="isLocal ? 'sym_o_offline_bolt' : 'sym_o_person'" size="16px" />
-                        <span class="ellipsis">{{ app.user?.email || 'Без аккаунта' }}</span>
-                    </div>
-                </div>
 
                 <q-list class="app-nav">
                     <q-item clickable :to="{ name: PAGES.Settings }" exact class="app-nav__item"
@@ -280,25 +269,8 @@ const logoutBtnClick = async () => {
     margin: 8px 4px;
 }
 
-.app-drawer__meta {
-    display: grid;
-    gap: 6px;
-    padding: 8px 10px 10px;
-    color: #6b7280;
-    font-size: 12px;
-}
-
-.app-drawer__meta-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-}
-
-.q-drawer--mini {
-    .app-drawer__inner {
-        padding: 8px 4px;
-    }
+.app-drawer__inner--mini {
+    padding: 8px 4px;
 
     .app-nav__item {
         justify-content: center;
@@ -306,14 +278,15 @@ const logoutBtnClick = async () => {
     }
 
     .app-nav__avatar {
+        flex-direction: row;
+        align-items: center;
         justify-content: center;
         width: 100%;
         min-width: 0;
         padding: 0;
     }
 
-    .app-nav__label,
-    .app-drawer__meta {
+    .app-nav__label {
         display: none;
     }
 
