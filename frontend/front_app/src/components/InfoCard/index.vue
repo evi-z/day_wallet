@@ -4,11 +4,16 @@
             @keydown.enter.prevent="expanded = !expanded" @keydown.space.prevent="expanded = !expanded">
             <div class="info-card__heading">
                 <div class="info-card__title">{{ title }}</div>
-                <div v-if="!expanded && ($slots.summary || summary)" class="info-card__summary">
+                <div v-if="summaryPlacement === 'below' && !expanded && ($slots.summary || summary)"
+                    class="info-card__summary">
                     <slot name="summary">{{ summary }}</slot>
                 </div>
             </div>
-            <q-space />
+            <q-space v-if="summaryPlacement === 'below'" />
+            <div v-if="summaryPlacement === 'inline' && !expanded && ($slots.summary || summary)"
+                class="info-card__summary info-card__summary--inline">
+                <slot name="summary">{{ summary }}</slot>
+            </div>
             <q-icon :name="expanded ? 'sym_o_expand_less' : 'sym_o_expand_more'" size="20px"
                 class="info-card__chevron" />
         </div>
@@ -26,10 +31,12 @@
 interface Props {
     title: string,
     summary?: string,
+    summaryPlacement?: 'below' | 'inline',
 }
 
 withDefaults(defineProps<Props>(), {
     summary: '',
+    summaryPlacement: 'below',
 })
 
 const expanded = defineModel<boolean>({ default: false })
@@ -45,7 +52,7 @@ const expanded = defineModel<boolean>({ default: false })
     align-items: center;
     gap: 8px;
     min-height: 40px;
-    padding: 6px 12px;
+    padding: 6px 10px;
     cursor: pointer;
     transition: background-color 0.15s ease;
 }
@@ -68,14 +75,22 @@ const expanded = defineModel<boolean>({ default: false })
 .info-card__summary {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 2px;
     margin-top: 1px;
     color: #6b7280;
     font-size: 10px;
     line-height: 1.3;
 }
 
+.info-card__summary--inline {
+    justify-content: flex-end;
+    min-width: 0;
+    max-width: 65%;
+    margin-left: auto;
+}
+
 .info-card__chevron {
+    margin-left: 4px;
     flex: 0 0 auto;
     color: #6b7280;
 }
