@@ -31,19 +31,21 @@
                     </div>
                 </q-card-section>
 
-                <q-separator />
-
-                <q-expansion-item class="today-totals" dense label="Итоги периода" :caption="totalsCaption">
-                    <div class="stat-grid">
-                        <div class="stat-tile"><span>Потрачено</span><strong>{{ formatMoney(totals.spent) }}</strong></div>
-                        <div class="stat-tile"><span>Осталось</span><strong>{{ formatMoney(totals.remaining) }}</strong></div>
-                        <div class="stat-tile"><span>Дней</span><strong>{{ totals.days }}</strong></div>
-                        <div class="stat-tile"><span>Выходных / будних</span><strong>{{ totals.weekends }} / {{ totals.weekdays }}</strong></div>
-                        <div class="stat-tile"><span>Потрачено выходные</span><strong>{{ formatMoney(totals.spentWeekends) }}</strong></div>
-                        <div class="stat-tile"><span>Потрачено будни</span><strong>{{ formatMoney(totals.spentWeekdays) }}</strong></div>
-                    </div>
-                </q-expansion-item>
             </q-card>
+        </section>
+
+        <!-- Итоги периода -->
+        <section class="grid-item-totals">
+            <InfoCard v-model="totalsOpen" title="Итоги периода" :summary="totalsCaption">
+                <div class="stat-grid">
+                    <div class="stat-tile"><span>Потрачено</span><strong>{{ formatMoney(totals.spent) }}</strong></div>
+                    <div class="stat-tile"><span>Осталось</span><strong>{{ formatMoney(totals.remaining) }}</strong></div>
+                    <div class="stat-tile"><span>Дней</span><strong>{{ totals.days }}</strong></div>
+                    <div class="stat-tile"><span>Выходных / будних</span><strong>{{ totals.weekends }} / {{ totals.weekdays }}</strong></div>
+                    <div class="stat-tile"><span>Потрачено выходные</span><strong>{{ formatMoney(totals.spentWeekends) }}</strong></div>
+                    <div class="stat-tile"><span>Потрачено будни</span><strong>{{ formatMoney(totals.spentWeekdays) }}</strong></div>
+                </div>
+            </InfoCard>
         </section>
 
         <!-- Календарь -->
@@ -88,23 +90,21 @@
 
         <!-- Параметры периода -->
         <section class="grid-item-params">
-            <q-card flat bordered class="params-card">
-                <q-expansion-item dense label="Параметры периода" :caption="paramsCaption">
-                    <q-card-section class="params-form">
-                        <MoneyInput v-model="periodBudget" label="Бюджет периода" />
-                        <MoneyInput v-model="weekendPlan" label="План на выходные" />
-                        <div class="params-summary">
-                            <div>Будни: {{ formatMoney(params.initialPlan) }} / день</div>
-                            <div>Выходные: {{ formatMoney(params.weekend) }} / день</div>
-                            <div class="text-caption text-grey-7">
-                                {{ params.totalDays }} {{ plural(params.totalDays, 'день', 'дня', 'дней') }} ·
-                                {{ params.weekendDays }} {{ plural(params.weekendDays, 'выходной', 'выходных', 'выходных') }} ·
-                                {{ params.weekdayDays }} {{ plural(params.weekdayDays, 'будний', 'будних', 'будних') }}
-                            </div>
+            <InfoCard v-model="paramsOpen" title="Параметры периода" :summary="paramsCaption">
+                <div class="params-form">
+                    <MoneyInput v-model="periodBudget" label="Бюджет периода" />
+                    <MoneyInput v-model="weekendPlan" label="План на выходные" />
+                    <div class="params-summary">
+                        <div>Будни: {{ formatMoney(params.initialPlan) }} / день</div>
+                        <div>Выходные: {{ formatMoney(params.weekend) }} / день</div>
+                        <div class="text-caption text-grey-7">
+                            {{ params.totalDays }} {{ plural(params.totalDays, 'день', 'дня', 'дней') }} ·
+                            {{ params.weekendDays }} {{ plural(params.weekendDays, 'выходной', 'выходных', 'выходных') }} ·
+                            {{ params.weekdayDays }} {{ plural(params.weekdayDays, 'будний', 'будних', 'будних') }}
                         </div>
-                    </q-card-section>
-                </q-expansion-item>
-            </q-card>
+                    </div>
+                </div>
+            </InfoCard>
         </section>
         <!-- Редактирование периода -->
         <q-dialog v-model="editState.open">
@@ -165,6 +165,7 @@ import { AppDate } from 'src/utils/date';
 import { getPeriodDocumentCalendarDataRows } from './funs';
 import TableCell from 'src/components/TableCell/index.vue';
 import MoneyInput from 'src/components/MoneyInput/index.vue';
+import InfoCard from 'src/components/InfoCard/index.vue';
 import { useDocumentCalendarFactValuesRef, useDocumentMainValuesRef } from 'src/services/database/wrappers/period_docs';
 import { calculatePeriod } from 'src/domain/period_calc';
 import { PeriodCalendarModel } from 'src/components/PeriodCalendar/models';
@@ -181,6 +182,8 @@ const { document } = defineProps<Props>()
 
 const emit = defineEmits<{ updated: [] }>()
 const $q = useQuasar()
+const totalsOpen = ref($q.screen.gt.sm)
+const paramsOpen = ref($q.screen.gt.sm)
 
 /** Состояние диалога редактирования периода */
 const editState = reactive({
@@ -547,9 +550,10 @@ watch(() => [document.from_date, document.to_date], () => {
     height: 100%;
     min-height: 0;
     grid-template-columns: minmax(0, 1fr) 340px;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
     grid-template-areas:
         "result today"
+        "result totals"
         "result params";
 }
 
@@ -563,11 +567,12 @@ watch(() => [document.from_date, document.to_date], () => {
     .page-container {
         height: auto;
         grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: auto auto auto;
+        grid-template-rows: auto auto auto auto;
         grid-template-areas:
             "today"
-            "result"
-            "params";
+            "totals"
+            "params"
+            "result";
     }
 
     .grid-item-result {
@@ -584,6 +589,11 @@ watch(() => [document.from_date, document.to_date], () => {
 
 .grid-item-today {
     grid-area: today;
+    min-width: 0;
+}
+
+.grid-item-totals {
+    grid-area: totals;
     min-width: 0;
 }
 
@@ -671,8 +681,7 @@ watch(() => [document.from_date, document.to_date], () => {
     }
 }
 
-.today-card,
-.params-card {
+.today-card {
     border-radius: 10px;
 }
 
@@ -741,15 +750,6 @@ watch(() => [document.from_date, document.to_date], () => {
     margin-top: 4px;
     font-size: 10px;
     color: #6b7280;
-}
-
-.today-totals :deep(.q-item) {
-    min-height: 38px;
-}
-
-.today-totals :deep(.q-item__label--caption),
-.params-card :deep(.q-item__label--caption) {
-    font-size: 10px;
 }
 
 .stat-grid {
