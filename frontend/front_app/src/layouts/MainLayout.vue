@@ -2,9 +2,9 @@
     <q-layout view="hHh Lpr lFf" class="app-layout">
         <q-header class="app-header" height-hint="48">
             <q-toolbar class="app-toolbar">
-                <q-btn v-if="isDesktop" flat dense round :icon="drawerOpen ? 'sym_o_menu_open' : 'sym_o_menu'"
-                    class="app-header__menu" @click="drawerOpen = !drawerOpen">
-                    <q-tooltip>{{ drawerOpen ? 'Свернуть меню' : 'Развернуть меню' }}</q-tooltip>
+                <q-btn v-if="isDesktop" flat dense round :icon="mini ? 'sym_o_menu' : 'sym_o_menu_open'"
+                    class="app-header__menu" @click="mini = !mini">
+                    <q-tooltip>{{ mini ? 'Показать подписи' : 'Свернуть в иконки' }}</q-tooltip>
                 </q-btn>
 
                 <div class="app-brand" @click="$router.push({ name: PAGES.Pulse })">
@@ -28,8 +28,8 @@
             </q-toolbar>
         </q-header>
 
-        <q-drawer v-if="isDesktop" v-model="drawerOpen" show-if-above :width="216" class="app-drawer"
-            :breakpoint="0">
+        <q-drawer v-if="isDesktop" v-model="drawerVisible" show-if-above :mini="mini" :width="216"
+            :mini-width="56" class="app-drawer" :breakpoint="0">
             <div class="app-drawer__inner">
                 <q-list class="app-nav">
                     <q-item v-for="item in navItems" :key="item.name" clickable :to="{ name: item.name }" exact
@@ -38,6 +38,9 @@
                             <q-icon :name="item.icon" size="20px" />
                         </q-item-section>
                         <q-item-section class="app-nav__label">{{ item.label }}</q-item-section>
+                        <q-tooltip v-if="mini" anchor="center right" self="center left" :offset="[8, 0]">
+                            {{ item.label }}
+                        </q-tooltip>
                     </q-item>
                 </q-list>
 
@@ -63,6 +66,9 @@
                             <q-icon name="sym_o_settings" size="20px" />
                         </q-item-section>
                         <q-item-section class="app-nav__label">Настройки</q-item-section>
+                        <q-tooltip v-if="mini" anchor="center right" self="center left" :offset="[8, 0]">
+                            Настройки
+                        </q-tooltip>
                     </q-item>
                 </q-list>
             </div>
@@ -82,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { PAGES } from 'src/router/models';
@@ -95,7 +101,10 @@ const route = useRoute();
 
 const isDesktop = computed(() => $q.screen.gt.sm);
 const isLocal = computed(() => app.state.mode === APP_MODE.local);
-const drawerOpen = ref(true);
+const drawerVisible = ref(true);
+const mini = ref(localStorage.getItem('dw-drawer-mini') === '1');
+
+watch(mini, (value) => localStorage.setItem('dw-drawer-mini', value ? '1' : '0'));
 
 const navItems = [
     { name: PAGES.Pulse, label: 'Пульс', icon: 'sym_o_monitor_heart' },
@@ -284,6 +293,33 @@ const logoutBtnClick = async () => {
     align-items: center;
     gap: 6px;
     min-width: 0;
+}
+
+.q-drawer--mini {
+    .app-drawer__inner {
+        padding: 8px 4px;
+    }
+
+    .app-nav__item {
+        justify-content: center;
+        padding: 0 8px;
+    }
+
+    .app-nav__avatar {
+        justify-content: center;
+        width: 100%;
+        min-width: 0;
+        padding: 0;
+    }
+
+    .app-nav__label,
+    .app-drawer__meta {
+        display: none;
+    }
+
+    .app-drawer__sep {
+        margin: 8px;
+    }
 }
 
 .app-page-container {
