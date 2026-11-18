@@ -22,7 +22,9 @@ export const PeriodDocCurrentDataFields = {
     total_remaining: 'total_remaining',  // Общее количество оставшихся денег
     remaining_for_weekends: 'remaining_for_weekends',  // Количество оставшихся денег в выходные
     remaining_for_weekdays: 'remaining_for_weekdays',  // Количество оставшихся денег в будние
-    plan_for_today: 'plan_for_today'  // План на сегодня
+    plan_for_today: 'plan_for_today',  // План на сегодня
+    spent_today: 'spent_today',  // Потрачено сегодня
+    remaining_today: 'remaining_today'  // Осталось сегодня (план дня минус сегодняшний факт)
 } as const
 
 export type PeriodDocCurrentDataFieldsMap = typeof PeriodDocCurrentDataFields[keyof typeof PeriodDocCurrentDataFields]

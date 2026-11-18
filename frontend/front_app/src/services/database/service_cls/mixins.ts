@@ -3,6 +3,11 @@ import { BaseDatabaseService } from './base'
 
 type Constructor<T = {}> = new (...args: any[]) => T
 type RemoteDBChangeCallback = (doc: PouchDB.Core.ExistingDocument<object>) => void
+export type RemoteSyncStatus = 'syncing' | 'synced' | 'error'
+
+type RemoteSyncOptions = {
+    onStatus?: (status: RemoteSyncStatus, detail?: unknown) => void
+}
 
 /**
  * Миксин для добавления функциональности удаленной синхронизации
@@ -13,10 +18,15 @@ export function DBWithRemoteSync<TBase extends Constructor<BaseDatabaseService>>
         private _remoteDB?: PouchDB.Database | undefined
         private _syncHandler?: PouchDB.Replication.Sync<{}> | undefined
         private _remoteDBChangeListeners: Record<string, RemoteDBChangeCallback[]> = {}
+        private _syncStatusListener?: RemoteSyncOptions['onStatus']
 
 
         protected get remoteDB() {
             return this._remoteDB
+        }
+
+        private _notifySyncStatus(status: RemoteSyncStatus, detail?: unknown) {
+            this._syncStatusListener?.(status, detail)
         }
 
         async _replicateFromRemote() {
@@ -26,11 +36,15 @@ export function DBWithRemoteSync<TBase extends Constructor<BaseDatabaseService>>
                 throw new Error('Remote DB not initialized')
             }
 
-            return this.db.replicate.from(this._remoteDB).on('complete', function (info) {
-                console.log('Replicate from remote complete')
-            }).on('error', function (err) {
-                console.error('Replicate from remote error:', err)
-                throw new Error(`Replicate from remote error: ${err}`)
+            // Важно дождаться именно результата репликации: событие error
+            // само по себе не отклоняет промис.
+            return new Promise<void>((resolve, reject) => {
+                this.db.replicate.from(this._remoteDB!).on('complete', () => {
+                    resolve()
+                }).on('error', (err) => {
+                    console.error('Replicate from remote error:', err)
+                    reject(err)
+                })
             })
         }
 
@@ -47,7 +61,9 @@ export function DBWithRemoteSync<TBase extends Constructor<BaseDatabaseService>>
             this._syncHandler = this.db.sync(this._remoteDB, {
                 live: true,
                 retry: true
-            }).on('change', (info) => {
+            })
+
+            this._syncHandler.on('change', (info) => {
                 /** Вызывается при изменении данных в БД */
                 if (info.direction === 'pull') {
                     info.change.docs.forEach(doc => {  /** Проходим по всем документам, которые были изменены */
@@ -55,19 +71,17 @@ export function DBWithRemoteSync<TBase extends Constructor<BaseDatabaseService>>
                         if (this._remoteDBChangeListeners[doc._id]) this._remoteDBChangeListeners[doc._id]!.forEach(callback => callback(doc))
                     })
                 }
-            }).on('paused', function (info) {
-                /** Вызывается при паузе синхронизации */
-                console.log('Paused:', info)
-            }).on('active', function () {
-                /** Вызывается при активации синхронизации */
-                console.log('Active')
-            }).on('error', function (err) {
-                /** Вызывается при ошибке синхронизации */
-                console.log('Error:', err)
-            }).on('complete', function (info) {
-                /** Вызывается при завершении синхронизации */
-                console.log('Complete:', info)
+            }).on('paused', (info) => {
+                /** Обмен завершил текущую пачку изменений */
+                const pending = (info as { pending?: number } | undefined)?.pending
+                this._notifySyncStatus(pending ? 'syncing' : 'synced')
+            }).on('active', () => {
+                this._notifySyncStatus('syncing')
+            }).on('error', (err) => {
+                console.error('Sync error:', err)
+                this._notifySyncStatus('error', err)
             })
+            // complete наступает и при штатной отмене (logout) — статус не трогаем
         }
 
         stopSyncWithRemote() {
@@ -77,10 +91,12 @@ export function DBWithRemoteSync<TBase extends Constructor<BaseDatabaseService>>
             }
         }
 
-        async initSyncWithRemote(remoteDB: PouchDB.Database) {
+        async initSyncWithRemote(remoteDB: PouchDB.Database, options?: RemoteSyncOptions) {
             /** Инициализирует синхронизацию с удалённой БД */
 
+            this._syncStatusListener = options?.onStatus
             this._remoteDB = remoteDB
+            this._notifySyncStatus('syncing')
             await this._replicateFromRemote() // Подтягиваем данные из удалённой БД в локальную
             this._startSyncWithRemote() // Запускаем синхронизацию
         }

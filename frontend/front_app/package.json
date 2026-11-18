@@ -8,7 +8,8 @@
   "private": true,
   "scripts": {
     "dev": "cross-env QUASAR_ENVIRONMENT=dev quasar dev",
-    "build": "cross-env QUASAR_ENVIRONMENT=prod quasar build"
+    "build": "cross-env QUASAR_ENVIRONMENT=prod quasar build",
+    "test": "node --test tests/*.test.ts"
   },
   "dependencies": {
     "@quasar/extras": "^1.16.4",

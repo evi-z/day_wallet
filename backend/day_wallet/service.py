@@ -96,7 +96,6 @@ class AppUserService:
                 f"Пользователь не найден в CouchDB: {response.text}"
             )
 
-        print("CouchDB user:", response.json())
         return response.json()
 
     @classmethod

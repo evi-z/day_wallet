@@ -160,6 +160,18 @@ export const PeriodDocCurrentDataRows: PeriodDocInitAndCurrentBaseRow<PeriodDocC
         cellType: TableCellType.text,
         cellFormat: TableCellFormatType.currency,
     },
+    {
+        name: PeriodDocCurrentDataFields.spent_today,
+        label: 'Потрачено сегодня',
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.currency,
+    },
+    {
+        name: PeriodDocCurrentDataFields.remaining_today,
+        label: 'Осталось сегодня',
+        cellType: TableCellType.text,
+        cellFormat: TableCellFormatType.currency,
+    },
 ] as const
 
 export type PeriodDocInitCalcRowValues = Record<Exclude<PeriodDocInitDataFieldsMap, 'total_budget' | 'weekend_plan'>, number>

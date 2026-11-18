@@ -227,6 +227,33 @@ const submitForm = async () => {
 const handleLogin = async () => {
     return api.auth.login(form.value as LoginForm).then(async(res) => {
         await app.login(res);
+
+        // Локальные периоды оффлайн-режима не должны молча исчезать после входа
+        if (await app.shouldOfferLocalImport()) {
+            const localCount = await app.getLocalPeriodsCount()
+            const shouldImport = await new Promise<boolean>((resolve) => {
+                let settled = false
+                const finish = (value: boolean) => {
+                    if (settled) return
+                    settled = true
+                    resolve(value)
+                }
+
+                $q.dialog({
+                    title: 'Локальные периоды',
+                    message: `В оффлайн-режиме найдено периодов: ${localCount}. Перенести их в аккаунт ${res.email}?`,
+                    cancel: { label: 'Оставить локально', flat: true, color: 'grey-7' },
+                    ok: { label: 'Перенести', color: 'primary' },
+                    persistent: true,
+                }).onOk(() => finish(true))
+                    .onCancel(() => finish(false))
+                    .onDismiss(() => finish(false))
+            })
+
+            if (shouldImport) await app.importLocalPeriods()
+            else await app.dismissLocalImport()
+        }
+
         $router.push({ name: PAGES.Index });
     }).catch((err) => {
         console.error(err);
