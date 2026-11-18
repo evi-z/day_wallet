@@ -101,7 +101,7 @@
 
         <!-- Параметры периода -->
         <section class="grid-item-params">
-            <InfoCard v-model="paramsOpen" title="Параметры периода" summary-placement="inline">
+            <InfoCard v-model="paramsOpen" title="Параметры периода">
                 <template #summary>
                     <q-chip dense class="summary-chip">
                         <span class="summary-chip__label">бюджет</span>
@@ -766,9 +766,9 @@ watch(() => [document.from_date, document.to_date], () => {
 }
 
 .summary-chip {
-    height: 22px;
+    height: 24px;
     margin: 0;
-    padding: 0 3px;
+    padding: 0 8px;
     border-radius: 7px;
     background: #f3f6f4;
     color: #374151;
@@ -778,17 +778,17 @@ watch(() => [document.from_date, document.to_date], () => {
 .summary-chip :deep(.q-chip__content) {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
 }
 
 .summary-chip__label {
     color: #6b7280;
-    font-size: 9px;
+    font-size: 10px;
 }
 
 .summary-chip__value {
     color: #111827;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
 }
 

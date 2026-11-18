@@ -1,21 +1,23 @@
 <template>
     <q-card flat bordered class="info-card">
-        <div class="info-card__head" role="button" tabindex="0" @click="expanded = !expanded"
+        <div ref="headRef" class="info-card__head" role="button" tabindex="0" @click="expanded = !expanded"
             @keydown.enter.prevent="expanded = !expanded" @keydown.space.prevent="expanded = !expanded">
             <div class="info-card__heading">
-                <div class="info-card__title">{{ title }}</div>
-                <div v-if="summaryPlacement === 'below' && !expanded && ($slots.summary || summary)"
-                    class="info-card__summary">
+                <div ref="titleRef" class="info-card__title">{{ title }}</div>
+                <div v-if="showSummary && !inline" ref="summaryRef" class="info-card__summary">
                     <slot name="summary">{{ summary }}</slot>
                 </div>
             </div>
-            <q-space v-if="summaryPlacement === 'below'" />
-            <div v-if="summaryPlacement === 'inline' && !expanded && ($slots.summary || summary)"
+
+            <div v-if="showSummary && inline" ref="summaryRef"
                 class="info-card__summary info-card__summary--inline">
                 <slot name="summary">{{ summary }}</slot>
             </div>
-            <q-icon :name="expanded ? 'sym_o_expand_less' : 'sym_o_expand_more'" size="20px"
-                class="info-card__chevron" />
+
+            <q-space v-if="!inline" />
+            <span ref="chevronRef" class="info-card__chevron">
+                <q-icon :name="expanded ? 'sym_o_expand_less' : 'sym_o_expand_more'" size="20px" />
+            </span>
         </div>
 
         <q-slide-transition>
@@ -28,18 +30,61 @@
 </template>
 
 <script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
+
 interface Props {
     title: string,
     summary?: string,
-    summaryPlacement?: 'below' | 'inline',
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     summary: '',
-    summaryPlacement: 'below',
 })
 
 const expanded = defineModel<boolean>({ default: false })
+
+const slots = useSlots()
+const headRef = ref<HTMLElement | null>(null)
+const titleRef = ref<HTMLElement | null>(null)
+const summaryRef = ref<HTMLElement | null>(null)
+const chevronRef = ref<HTMLElement | null>(null)
+const inline = ref(false)
+
+const showSummary = computed(() => !expanded.value && (!!slots.summary || !!props.summary))
+
+let observer: ResizeObserver | undefined
+
+const updateLayout = async () => {
+    await nextTick()
+    if (!showSummary.value || !headRef.value || !titleRef.value || !summaryRef.value) {
+        inline.value = false
+        return
+    }
+
+    const headStyle = getComputedStyle(headRef.value)
+    const padding = parseFloat(headStyle.paddingLeft) + parseFloat(headStyle.paddingRight)
+    const available = headRef.value.clientWidth - padding
+
+    const titleWidth = titleRef.value.scrollWidth
+    const chevronWidth = chevronRef.value?.offsetWidth ?? 0
+    const chips = Array.from(summaryRef.value.querySelectorAll<HTMLElement>('.q-chip'))
+    const summaryWidth = chips.length
+        ? chips.reduce((sum, chip, index) => sum + chip.offsetWidth + (index > 0 ? 4 : 0), 0)
+        : summaryRef.value.scrollWidth
+
+    // 8px между заголовком, сводкой и шевроном
+    inline.value = titleWidth + summaryWidth + chevronWidth + 16 <= available
+}
+
+watch(showSummary, () => { void updateLayout() })
+
+onMounted(async () => {
+    await updateLayout()
+    observer = new ResizeObserver(() => { void updateLayout() })
+    if (headRef.value) observer.observe(headRef.value)
+})
+
+onBeforeUnmount(() => observer?.disconnect())
 </script>
 
 <style lang="scss" scoped>
@@ -52,7 +97,7 @@ const expanded = defineModel<boolean>({ default: false })
     align-items: center;
     gap: 8px;
     min-height: 40px;
-    padding: 6px 10px;
+    padding: 8px 12px;
     cursor: pointer;
     transition: background-color 0.15s ease;
 }
@@ -63,34 +108,39 @@ const expanded = defineModel<boolean>({ default: false })
 
 .info-card__heading {
     min-width: 0;
+    flex: 0 1 auto;
 }
 
 .info-card__title {
+    overflow: hidden;
+    max-width: 100%;
     color: #111827;
     font-size: 13px;
     font-weight: 600;
     line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .info-card__summary {
     display: flex;
     flex-wrap: wrap;
-    gap: 2px;
-    margin-top: 1px;
+    gap: 4px;
+    margin-top: 2px;
     color: #6b7280;
     font-size: 10px;
     line-height: 1.3;
 }
 
 .info-card__summary--inline {
+    flex: 0 0 auto;
     justify-content: flex-end;
-    min-width: 0;
-    max-width: 65%;
+    margin-top: 0;
     margin-left: auto;
 }
 
 .info-card__chevron {
-    margin-left: 4px;
+    display: flex;
     flex: 0 0 auto;
     color: #6b7280;
 }
