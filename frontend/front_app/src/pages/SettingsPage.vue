@@ -171,10 +171,11 @@ const handleFile = async (event: Event) => {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 12px;
-    align-items: start;
+    align-items: stretch;
 }
 
 .settings-card {
+    height: 100%;
     border-radius: 10px;
 }
 
