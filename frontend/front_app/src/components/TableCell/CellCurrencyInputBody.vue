@@ -26,7 +26,9 @@ const inputClass = computed(() => {
 const { inputRef, formattedValue, numberValue, setValue } = useCurrencyInput({
     currency: 'RUB',
     locale: 'ru-RU',
-    precision: 0,
+    // Разрешаем копейки: целые значения показываются без дробной части,
+    // дробные — с двумя знаками после запятой.
+    precision: { min: 0, max: 2 },
     useGrouping: true,
 }, false)
 

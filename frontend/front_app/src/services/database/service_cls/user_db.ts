@@ -25,6 +25,15 @@ export class UserDatabaseService extends DBWithRemoteSync(BaseTypeDatabaseServic
         return this._createAuditTypeDocument(UserDBDataType.document, from)
     }
 
+    /** Обновляет название и границы существующего документа периода */
+    async updatePeriodDocument(document: PeriodDocumentDBData, data: PeriodDocumentFormData) {
+        return this.db.put({
+            ...document,
+            ...data,
+            updated_at: new Date().toISOString(),
+        })
+    }
+
     /** Получает все документы периода */
     async fetchPeriodDocuments() {
         return this._findByType<PeriodDocumentDBData>(

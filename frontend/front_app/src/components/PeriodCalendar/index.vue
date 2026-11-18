@@ -6,7 +6,7 @@
 <script setup lang="ts">
 import { date, QDateProps } from 'quasar';
 import { FRIENDLY_DATE_FORMAT } from 'src/utils/date';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { PeriodCalendarModel } from './models';
 
 interface Props extends Omit<QDateProps, 'onUpdate:modelValue' | 'modelValue' | 'title' | 'subtitle' | 'range' | 'onRangeStart' | 'onRangeEnd'> { }
@@ -14,6 +14,13 @@ interface Props extends Omit<QDateProps, 'onUpdate:modelValue' | 'modelValue' | 
 const value = defineModel<PeriodCalendarModel>({ required: true })
 
 const calendarTitle = ref('Выберите период')
+
+// Показываем уже выбранный диапазон, если компонент открыт с готовым значением
+watch(value, (val) => {
+    calendarTitle.value = val?.from && val?.to
+        ? `${val.from} - ${val.to}`
+        : 'Выберите период'
+}, { immediate: true })
 
 type onRangeDateArg = Parameters<NonNullable<QDateProps['onRangeStart']>>[0]
 

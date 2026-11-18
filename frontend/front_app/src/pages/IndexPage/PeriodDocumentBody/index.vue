@@ -94,6 +94,48 @@
                 </q-card-section>
             </q-card>
         </div>
+        <!-- Редактирование периода -->
+        <q-dialog v-model="editState.open">
+            <q-card class="edit-period-card">
+                <q-card-section class="text-subtitle1">Период</q-card-section>
+                <q-card-section class="q-gutter-y-md column">
+                    <q-input v-model="editState.name" outlined dense label="Название периода" :maxlength="22" />
+                    <div class="row q-gutter-sm">
+                        <q-input class="col" v-model="editState.period.from" outlined dense readonly label="С">
+                            <template #append>
+                                <q-icon name="event" class="cursor-pointer">
+                                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                                        <q-date v-model="editState.period.from" mask="DD.MM.YYYY" />
+                                    </q-popup-proxy>
+                                </q-icon>
+                            </template>
+                        </q-input>
+                        <q-input class="col" v-model="editState.period.to" outlined dense readonly label="По">
+                            <template #append>
+                                <q-icon name="event" class="cursor-pointer">
+                                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                                        <q-date v-model="editState.period.to" mask="DD.MM.YYYY" />
+                                    </q-popup-proxy>
+                                </q-icon>
+                            </template>
+                        </q-input>
+                    </div>
+                    <div v-if="editRangeInvalid" class="text-caption text-negative">
+                        Дата начала позже даты конца.
+                    </div>
+                    <div v-if="editFactsOutside.count > 0" class="text-caption text-orange-9">
+                        За новыми границами останется {{ editFactsOutside.count }} записей на
+                        {{ formatMoney(editFactsOutside.total) }}. Они сохранятся и вернутся,
+                        если расширить период.
+                    </div>
+                </q-card-section>
+                <q-card-actions align="right">
+                    <q-btn flat label="Отмена" v-close-popup />
+                    <q-btn color="primary" label="Сохранить" :loading="editState.saving" :disable="!editCanSave"
+                        @click="handleSaveEdit" />
+                </q-card-actions>
+            </q-card>
+        </q-dialog>
     </div>
 </template>
 
@@ -108,7 +150,7 @@ import {
     PeriodDocCurrentRowValues,
     PeriodDocCalendarRow,
 } from './models';
-import { onBeforeUnmount, onMounted, ref, shallowRef, computed, triggerRef } from 'vue';
+import { onBeforeUnmount, onMounted, ref, shallowRef, computed, triggerRef, reactive, watch } from 'vue';
 import { PeriodDocumentDBData, PeriodDocumentMainValuesData } from 'src/models/database';
 import { AppDate } from 'src/utils/date';
 import { getPeriodDocumentCalendarDataRows } from './funs';
@@ -116,6 +158,9 @@ import { PeriodDocInitDataFields, PeriodDocInitDataFieldsMap } from 'src/models/
 import TableCell from 'src/components/TableCell/index.vue';
 import { useDocumentCalendarFactValuesRef, useDocumentMainValuesRef } from 'src/services/database/wrappers/period_docs';
 import { calculatePeriod } from 'src/domain/period_calc';
+import { PeriodCalendarModel } from 'src/components/PeriodCalendar/models';
+import { useQuasar } from 'quasar';
+import app from 'src/services/app';
 
 const initCurrentPagination = ref({ rowsPerPage: 0 })
 
@@ -124,6 +169,17 @@ interface Props {
 }
 
 const { document } = defineProps<Props>()
+
+const emit = defineEmits<{ updated: [] }>()
+const $q = useQuasar()
+
+/** Состояние диалога редактирования периода */
+const editState = reactive({
+    open: false,
+    saving: false,
+    name: '',
+    period: { from: '', to: '' } as PeriodCalendarModel,
+})
 
 const calendarRows = shallowRef<PeriodDocCalendarRow[]>([])  // Строки календаря
 const currentDate = ref<AppDate>(AppDate.today())  // Текущая дата
@@ -275,13 +331,89 @@ const handleVisibilityChange = () => {
 }
 
 
+/** Открывает диалог редактирования названия и границ периода */
 const handleEdit = () => {
-    console.log('handleEdit')
+    editState.name = document.name
+    editState.period = { from: document.from_date, to: document.to_date }
+    editState.open = true
 }
+
+const editRangeInvalid = computed(() => {
+    const { from, to } = editState.period || { from: '', to: '' }
+    if (!from || !to) return false
+    return AppDate.fromFriendlyFormat(from).iso > AppDate.fromFriendlyFormat(to).iso
+})
+
+const editCanSave = computed(() => {
+    return !!(editState.name.trim() && editState.period.from && editState.period.to && !editRangeInvalid.value)
+})
+
+/** Факты, которые окажутся за новыми границами периода */
+const editFactsOutside = computed(() => {
+    const { from, to } = editState.period || { from: '', to: '' }
+    if (!from || !to) return { count: 0, total: 0 }
+
+    const fromIso = AppDate.fromFriendlyFormat(from).iso
+    const toIso = AppDate.fromFriendlyFormat(to).iso
+
+    let count = 0
+    let total = 0
+    for (const [friendly, value] of Object.entries(calendarFactDBValues.value)) {
+        if (!value) continue
+        const iso = AppDate.fromFriendlyFormat(friendly).iso
+        if (iso < fromIso || iso > toIso) {
+            count++
+            total += value
+        }
+    }
+
+    return { count, total: Math.round(total * 100) / 100 }
+})
+
+const formatMoney = (value: number) => {
+    return Intl.NumberFormat('ru-RU', {
+        style: 'currency',
+        currency: 'RUB',
+        maximumFractionDigits: 2,
+    }).format(value)
+}
+
+const handleSaveEdit = async () => {
+    if (!editCanSave.value) return
+
+    editState.saving = true
+    try {
+        await app.userDb!.updatePeriodDocument(document, {
+            name: editState.name.trim(),
+            from_date: editState.period.from,
+            to_date: editState.period.to,
+        })
+        editState.open = false
+        emit('updated')
+        $q.notify({ type: 'positive', message: 'Период обновлён' })
+    } catch (error) {
+        console.error('Error updating period document:', error)
+        $q.notify({ type: 'negative', message: 'Не удалось сохранить период' })
+    } finally {
+        editState.saving = false
+    }
+}
+
+/** Перестраивает календарь, если у документа изменились границы */
+watch(() => [document.from_date, document.to_date], () => {
+    initCalendarRows()
+    initCalendarFacts()
+    recalcDocumentCalcValues()
+})
 
 </script>
 
 <style lang="scss" scoped>
+.edit-period-card {
+    width: 360px;
+    max-width: 92vw;
+}
+
 .page-container {
     display: grid;
     gap: 16px;
