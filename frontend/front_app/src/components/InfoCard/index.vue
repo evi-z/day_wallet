@@ -4,13 +4,15 @@
             @keydown.enter.prevent="expanded = !expanded" @keydown.space.prevent="expanded = !expanded">
             <div class="info-card__heading">
                 <div ref="titleRef" class="info-card__title">{{ title }}</div>
-                <div v-if="showSummary && !inline" ref="summaryRef" class="info-card__summary">
+                <div v-if="hasSummary && !inline" ref="summaryRef" class="info-card__summary"
+                    :class="{ 'info-card__summary--hidden': expanded }">
                     <slot name="summary">{{ summary }}</slot>
                 </div>
             </div>
 
-            <div v-if="showSummary && inline" ref="summaryRef"
-                class="info-card__summary info-card__summary--inline">
+            <div v-if="hasSummary && inline" ref="summaryRef"
+                class="info-card__summary info-card__summary--inline"
+                :class="{ 'info-card__summary--hidden': expanded }">
                 <slot name="summary">{{ summary }}</slot>
             </div>
 
@@ -20,12 +22,13 @@
             </span>
         </div>
 
-        <q-slide-transition>
-            <div v-show="expanded" class="info-card__body">
+        <div class="info-card__body" :class="{ 'info-card__body--open': expanded }" :inert="!expanded"
+            :aria-hidden="!expanded">
+            <div class="info-card__body-inner">
                 <q-separator />
                 <slot />
             </div>
-        </q-slide-transition>
+        </div>
     </q-card>
 </template>
 
@@ -50,13 +53,13 @@ const summaryRef = ref<HTMLElement | null>(null)
 const chevronRef = ref<HTMLElement | null>(null)
 const inline = ref(false)
 
-const showSummary = computed(() => !expanded.value && (!!slots.summary || !!props.summary))
+const hasSummary = computed(() => !!slots.summary || !!props.summary)
 
 let observer: ResizeObserver | undefined
 
 const updateLayout = async () => {
     await nextTick()
-    if (!showSummary.value || !headRef.value || !titleRef.value || !summaryRef.value) {
+    if (!hasSummary.value || !headRef.value || !titleRef.value || !summaryRef.value) {
         inline.value = false
         return
     }
@@ -76,7 +79,7 @@ const updateLayout = async () => {
     inline.value = titleWidth + summaryWidth + chevronWidth + 16 <= available
 }
 
-watch(showSummary, () => { void updateLayout() })
+watch(hasSummary, () => { void updateLayout() })
 
 onMounted(async () => {
     await updateLayout()
@@ -127,9 +130,16 @@ onBeforeUnmount(() => observer?.disconnect())
     flex-wrap: wrap;
     gap: 4px;
     margin-top: 2px;
+    max-height: 56px;
+    overflow: hidden;
     color: #6b7280;
     font-size: 10px;
     line-height: 1.3;
+    opacity: 1;
+    transition:
+        max-height 220ms cubic-bezier(0.4, 0, 0.2, 1),
+        margin-top 220ms cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 180ms ease;
 }
 
 .info-card__summary--inline {
@@ -139,9 +149,30 @@ onBeforeUnmount(() => observer?.disconnect())
     margin-left: auto;
 }
 
+.info-card__summary--hidden {
+    max-height: 0;
+    margin-top: 0;
+    opacity: 0;
+}
+
 .info-card__chevron {
     display: flex;
     flex: 0 0 auto;
     color: #6b7280;
+}
+
+.info-card__body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.info-card__body--open {
+    grid-template-rows: 1fr;
+}
+
+.info-card__body-inner {
+    min-height: 0;
+    overflow: hidden;
 }
 </style>
