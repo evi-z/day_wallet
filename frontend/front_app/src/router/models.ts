@@ -12,7 +12,11 @@ declare module "vue-router" {
 
 export const PAGES = {
     Login: "Login", // (!) Имя не менять (логика редиректа в hooks)
-    Index: "Index",
+    Pulse: "Pulse",
+    Accounts: "Accounts",
+    Expenses: "Expenses",
+    Plan: "Plan",
+    Settings: "Settings",
 } as const;
 
 export type PageNames = (typeof PAGES)[keyof typeof PAGES]

@@ -13,8 +13,29 @@ const routes: RouteRecordRaw[] = [
 
         children: [{
             path: '',
-            name: PAGES.Index,
-            component: () => import('pages/IndexPage/index.vue')
+            name: PAGES.Pulse,
+            component: () => import('pages/IndexPage/index.vue'),
+            meta: { title: 'Пульс', icon: 'sym_o_monitor_heart' },
+        }, {
+            path: 'accounts',
+            name: PAGES.Accounts,
+            component: () => import('pages/AccountsPage.vue'),
+            meta: { title: 'Счета', icon: 'sym_o_account_balance_wallet' },
+        }, {
+            path: 'expenses',
+            name: PAGES.Expenses,
+            component: () => import('pages/ExpensesPage.vue'),
+            meta: { title: 'Траты', icon: 'sym_o_receipt_long' },
+        }, {
+            path: 'plan',
+            name: PAGES.Plan,
+            component: () => import('pages/PlanPage.vue'),
+            meta: { title: 'План', icon: 'sym_o_trending_up' },
+        }, {
+            path: 'settings',
+            name: PAGES.Settings,
+            component: () => import('pages/SettingsPage.vue'),
+            meta: { title: 'Настройки', icon: 'sym_o_settings' },
         }],
     },
 

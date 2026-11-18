@@ -64,7 +64,7 @@
                         <span>Календарь</span>
                         <q-space />
                         <div class="row items-center q-gutter-x-sm q-pr-sm">
-                            <q-btn icon="calendar_month" flat round @click="handleEdit" />
+                            <q-btn icon="calendar_month" flat round dense size="sm" @click="handleEdit" />
                         </div>
                     </div>
                 </q-card-section>
@@ -416,15 +416,24 @@ watch(() => [document.from_date, document.to_date], () => {
 
 .page-container {
     display: grid;
-    gap: 16px;
+    gap: 8px;
+    height: 100%;
+    min-height: 0;
 
     // Мобильная версия - вертикальная компоновка
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(320px, 1fr);
     grid-template-areas:
         "source"
         "current"
         "result";
+
+    .grid-item-source,
+    .grid-item-current,
+    .grid-item-result {
+        min-width: 0;
+        min-height: 0;
+    }
 
     .grid-item-source {
         grid-area: source;
@@ -440,16 +449,57 @@ watch(() => [document.from_date, document.to_date], () => {
 
     // Десктопная версия - двухколоночная компоновка
     @media (min-width: 1024px) {
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: 1fr 1fr;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        grid-template-rows: auto minmax(0, 1fr);
         grid-template-areas:
             "result source"
             "result current";
+    }
 
+    @media (min-width: 1440px) {
+        grid-template-columns: minmax(0, 1fr) 360px;
+    }
+
+    // На телефоне данные показываем целиком, а календарь оставляем
+    // прокручиваемой областью фиксированной высоты.
+    @media (max-width: 1023px) {
+        height: auto;
+        grid-template-rows: auto auto auto;
+        grid-template-areas:
+            "result"
+            "current"
+            "source";
+
+        .grid-item-result {
+            height: 56vh;
+            min-height: 340px;
+        }
+
+        .grid-item-source .q-card,
+        .grid-item-current .q-card {
+            height: auto !important;
+        }
+
+        .grid-item-source .card-table-section,
+        .grid-item-current .card-table-section {
+            height: auto;
+            overflow: visible;
+        }
+
+        .grid-item-source .page-table,
+        .grid-item-current .page-table {
+            height: auto !important;
+        }
+
+        .grid-item-source .q-table__middle,
+        .grid-item-current .q-table__middle {
+            overflow: visible;
+            max-height: none;
+        }
     }
 
     .card-title-section {
-        height: 50px;
+        height: 34px;
         padding: 0;
 
         .card-title-text {
@@ -457,12 +507,15 @@ watch(() => [document.from_date, document.to_date], () => {
             display: flex;
             flex-direction: row;
             align-items: center;
-            padding-left: 16px;
+            padding-left: 12px;
+            font-size: 13px;
         }
     }
 
     .card-table-section {
-        height: calc(100% - 50px);
+        height: calc(100% - 34px);
+        min-height: 0;
+        overflow: hidden;
 
         .page-table {
             border-top: 1px solid $table-border-color;

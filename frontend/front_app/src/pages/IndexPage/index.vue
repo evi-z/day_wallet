@@ -1,8 +1,28 @@
 <template>
-    <q-page class="fit page-container">
+    <q-page class="pulse-page">
         <InnerLoading :showing="state.loading" />
-        <q-toolbar class="page-toolbar bg-grey-4 no-padding" v-if="!state.loading">
-            <q-tabs dense class="tabs-toolbar" v-model="state.currentTab" no-caps>
+
+        <div class="pulse-toolbar">
+            <q-btn-dropdown class="pulse-account" flat dense no-caps icon="sym_o_wallet"
+                :label="$q.screen.gt.xs ? 'Жизнь' : undefined" :hide-dropdown-icon="!$q.screen.gt.xs">
+                <q-list dense>
+                    <q-item clickable v-close-popup>
+                        <q-item-section>Жизнь</q-item-section>
+                        <q-item-section side>
+                            <q-icon name="sym_o_check" size="16px" color="primary" />
+                        </q-item-section>
+                    </q-item>
+                    <q-separator />
+                    <q-item disabled>
+                        <q-item-section class="text-grey-6">Другие счета — позже</q-item-section>
+                    </q-item>
+                </q-list>
+            </q-btn-dropdown>
+
+            <q-separator vertical class="pulse-toolbar__sep" />
+
+            <q-tabs v-model="state.currentTab" dense no-caps align="left" class="pulse-tabs"
+                active-color="primary" indicator-color="primary" :mobile-arrows="false">
                 <q-tab v-for="tab in documentTabs" :key="tab._id" :name="tab._id" :label="tab.name">
                     <q-menu touch-position context-menu>
                         <q-list dense>
@@ -14,21 +34,22 @@
                         </q-list>
                     </q-menu>
                 </q-tab>
-                <q-tab v-if="state.currentTab === 'init'" name="init" label="Новый период" key="init" />
-                <q-btn v-else icon="add" flat @click="handleAddPeriod" >
-                    <q-tooltip>Добавить период</q-tooltip>
-                </q-btn>
+                <q-tab v-if="state.currentTab === 'init'" name="init" label="Новый период" />
             </q-tabs>
-        </q-toolbar>
-        <q-tab-panels v-model="state.currentTab" class="page-tab-panels fit">
-            <q-tab-panel name="init">
+
+            <q-btn flat dense round icon="sym_o_add" class="pulse-add" @click="handleAddPeriod">
+                <q-tooltip>Добавить период</q-tooltip>
+            </q-btn>
+        </div>
+
+        <q-tab-panels v-model="state.currentTab" class="pulse-panels">
+            <q-tab-panel name="init" class="pulse-panel">
                 <InitBody @created="handlePeriodCreated" />
             </q-tab-panel>
-            <q-tab-panel v-for="tab in documentTabs" :key="tab._id!" :name="tab._id!">
+            <q-tab-panel v-for="tab in documentTabs" :key="tab._id!" :name="tab._id!" class="pulse-panel">
                 <PeriodDocumentBody :document="tab" @updated="handleDocumentUpdated" />
             </q-tab-panel>
         </q-tab-panels>
-
     </q-page>
 </template>
 
@@ -123,14 +144,86 @@ const handleAddPeriod = () => {
 </script>
 
 <style lang="scss" scoped>
-.page-container {
-    .page-toolbar {
-        min-height: unset;
-        height: 36px !important;
+.pulse-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding: 6px 12px 10px;
+    overflow: hidden;
+}
+
+.pulse-toolbar {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 2px;
+    min-height: 34px;
+}
+
+.pulse-account {
+    flex: 0 0 auto;
+    font-weight: 500;
+    color: #374151;
+}
+
+.pulse-toolbar__sep {
+    height: 18px;
+    margin: 0 6px;
+}
+
+.pulse-tabs {
+    flex: 1 1 auto;
+    min-height: 32px;
+    min-width: 0;
+}
+
+.pulse-tabs :deep(.q-tab) {
+    min-height: 32px;
+    padding: 0 10px;
+    color: #4b5563;
+}
+
+.pulse-tabs :deep(.q-tab--active) {
+    color: $primary;
+    font-weight: 500;
+}
+
+.pulse-tabs :deep(.q-tab__indicator) {
+    height: 2px;
+}
+
+.pulse-add {
+    flex: 0 0 auto;
+    color: #4b5563;
+}
+
+.pulse-panels {
+    flex: 1 1 auto;
+    min-height: 0;
+    background: transparent;
+}
+
+.pulse-panel {
+    height: 100%;
+    padding: 0;
+    overflow: auto;
+}
+
+@media (max-width: 1023px) {
+    .pulse-tabs :deep(.q-tabs__arrow) {
+        display: none !important;
+    }
+}
+
+@media (max-width: 599px) {
+    .pulse-page {
+        padding: 4px 8px 8px;
     }
 
-    .page-tab-panels {
-        // padding: 0 16px;
+    .pulse-tabs :deep(.q-tab) {
+        padding: 0 8px;
+        font-size: 13px;
     }
 }
 </style>

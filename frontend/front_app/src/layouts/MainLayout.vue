@@ -1,71 +1,118 @@
 <template>
-    <q-layout view="lHh Lpr lFf" class="fit">
-        <q-header elevated>
-            <q-toolbar class="toolbar">
-                <!-- <q-btn flat dense round icon="menu" aria-label="Menu"/> -->
+    <q-layout view="hHh Lpr lFf" class="app-layout">
+        <q-header class="app-header" height-hint="48">
+            <q-toolbar class="app-toolbar">
+                <q-btn v-if="isDesktop" flat dense round :icon="drawerOpen ? 'sym_o_menu_open' : 'sym_o_menu'"
+                    class="app-header__menu" @click="drawerOpen = !drawerOpen">
+                    <q-tooltip>{{ drawerOpen ? 'Свернуть меню' : 'Развернуть меню' }}</q-tooltip>
+                </q-btn>
 
-                <q-toolbar-title>
-                    <div class="row items-center">
-                        <q-icon name="account_balance_wallet" size="2rem" color="white"></q-icon>
-                        <span class="q-ml-sm">Day Wallet</span>
-                    </div>
-
-                </q-toolbar-title>
-
-                <!-- <div>v1.0</div> -->
-                <div class="row items-center q-gutter-x-sm">
-                    <q-btn flat dense rounded no-caps icon="sym_o_database_upload" @click="exportDataBtnClick">
-                        <q-tooltip>Экспорт данных</q-tooltip>
-                    </q-btn>
-                    <q-btn flat dense rounded no-caps icon="sym_o_database_download" @click="importDataBtnClick">
-                        <q-tooltip>Импорт данных (оффлайн-режим)</q-tooltip>
-                    </q-btn>
-                    <input ref="importFileInput" type="file" accept=".json,application/json" class="hidden"
-                        @change="handleImportFile" />
-                    <q-btn v-if="app.state.mode === APP_MODE.remote" flat dense no-caps :icon="syncIcon"
-                        :color="syncColor" :label="syncLabel" class="q-mr-xs">
-                        <q-tooltip>{{ syncTooltip }}</q-tooltip>
-                    </q-btn>
-                    <q-btn v-if="app.state.mode === APP_MODE.local" flat dense rounded no-caps
-                        class="row items-center text-yellow-2 q-pr-xs">
-                        <q-icon name="sym_o_offline_bolt" size="26px" />
-                        <span class="text-body1 q-ml-xs">Оффлайн режим</span>
-                    </q-btn>
-                    <q-btn flat dense round :icon="app.state.mode === APP_MODE.local ? 'sym_o_login' : 'sym_o_logout'"
-                        :aria-label="logoutBtnLabel" @click="logoutBtnClick">
-                        <q-tooltip>
-                            {{ logoutBtnLabel }}
-                        </q-tooltip>
-                    </q-btn>
+                <div class="app-brand" @click="$router.push({ name: PAGES.Pulse })">
+                    <q-icon name="account_balance_wallet" size="22px" color="primary" />
+                    <span v-if="$q.screen.gt.xs" class="app-brand__name">Day Wallet</span>
                 </div>
+
+                <q-separator v-if="$q.screen.gt.sm" vertical class="app-header__sep" />
+                <div class="app-header__section">{{ currentSection }}</div>
+
+                <q-space />
+
+                <q-btn flat dense no-caps :icon="syncIcon" :color="syncColor"
+                    :label="$q.screen.gt.sm ? syncLabel : undefined" class="app-header__sync">
+                    <q-tooltip>{{ syncTooltip }}</q-tooltip>
+                </q-btn>
+
+                <q-btn flat dense round :icon="loginIcon" class="app-header__user" @click="logoutBtnClick">
+                    <q-tooltip>{{ logoutBtnLabel }}</q-tooltip>
+                </q-btn>
             </q-toolbar>
         </q-header>
 
-        <q-page-container class="page-container">
+        <q-drawer v-if="isDesktop" v-model="drawerOpen" show-if-above :width="216" class="app-drawer"
+            :breakpoint="0">
+            <div class="app-drawer__inner">
+                <q-list class="app-nav">
+                    <q-item v-for="item in navItems" :key="item.name" clickable :to="{ name: item.name }" exact
+                        class="app-nav__item" active-class="app-nav__item--active">
+                        <q-item-section avatar class="app-nav__avatar">
+                            <q-icon :name="item.icon" size="20px" />
+                        </q-item-section>
+                        <q-item-section class="app-nav__label">{{ item.label }}</q-item-section>
+                    </q-item>
+                </q-list>
+
+                <q-space />
+
+                <q-separator class="app-drawer__sep" />
+
+                <div class="app-drawer__meta">
+                    <div class="app-drawer__meta-row">
+                        <q-icon :name="syncIcon" :color="syncColor" size="18px" />
+                        <span class="ellipsis">{{ syncLabel }}</span>
+                    </div>
+                    <div class="app-drawer__meta-row">
+                        <q-icon :name="isLocal ? 'sym_o_offline_bolt' : 'sym_o_person'" size="16px" />
+                        <span class="ellipsis">{{ app.user?.email || 'Без аккаунта' }}</span>
+                    </div>
+                </div>
+
+                <q-list class="app-nav">
+                    <q-item clickable :to="{ name: PAGES.Settings }" exact class="app-nav__item"
+                        active-class="app-nav__item--active">
+                        <q-item-section avatar class="app-nav__avatar">
+                            <q-icon name="sym_o_settings" size="20px" />
+                        </q-item-section>
+                        <q-item-section class="app-nav__label">Настройки</q-item-section>
+                    </q-item>
+                </q-list>
+            </div>
+        </q-drawer>
+
+        <q-page-container class="app-page-container">
             <router-view />
         </q-page-container>
+
+        <q-footer v-if="!isDesktop" class="app-mobile-nav">
+            <q-tabs class="app-mobile-tabs" active-color="primary" indicator-color="transparent" dense no-caps>
+                <q-route-tab v-for="item in mobileNav" :key="item.name" :to="{ name: item.name }" :icon="item.icon"
+                    :label="item.label" exact class="app-mobile-tab" />
+            </q-tabs>
+        </q-footer>
     </q-layout>
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useQuasar } from 'quasar';
 import { PAGES } from 'src/router/models';
-import { useRouter } from 'vue-router';
 import app from 'src/services/app';
 import { APP_MODE, SYNC_STATUS } from 'src/services/app/models';
-import { computed, ref } from 'vue';
-import { downloadBlobFile } from 'src/utils/js-utils';
-import { useQuasar } from 'quasar';
 
-const $router = useRouter();
 const $q = useQuasar();
+const $router = useRouter();
+const route = useRoute();
 
-const importFileInput = ref<HTMLInputElement | null>(null);
+const isDesktop = computed(() => $q.screen.gt.sm);
+const isLocal = computed(() => app.state.mode === APP_MODE.local);
+const drawerOpen = ref(true);
 
-const logoutBtnLabel = computed(() => {
-    return app.state.mode === APP_MODE.local ? 'Войти' : 'Выйти';
-});
+const navItems = [
+    { name: PAGES.Pulse, label: 'Пульс', icon: 'sym_o_monitor_heart' },
+    { name: PAGES.Accounts, label: 'Счета', icon: 'sym_o_account_balance_wallet' },
+    { name: PAGES.Expenses, label: 'Траты', icon: 'sym_o_receipt_long' },
+    { name: PAGES.Plan, label: 'План', icon: 'sym_o_trending_up' },
+];
+
+const mobileNav = [
+    ...navItems,
+    { name: PAGES.Settings, label: 'Ещё', icon: 'sym_o_more_horiz' },
+];
+
+const currentSection = computed(() => route.meta.title || 'Day Wallet');
 
 const syncIcon = computed(() => {
+    if (isLocal.value) return 'sym_o_offline_bolt';
     switch (app.state.syncStatus) {
         case SYNC_STATUS.syncing:
         case SYNC_STATUS.connecting:
@@ -80,12 +127,14 @@ const syncIcon = computed(() => {
 });
 
 const syncColor = computed(() => {
-    if (app.state.syncStatus === SYNC_STATUS.error) return 'red-3';
-    if (app.state.syncStatus === SYNC_STATUS.syncing || app.state.syncStatus === SYNC_STATUS.connecting) return 'yellow-2';
-    return 'white';
+    if (isLocal.value) return 'grey-7';
+    if (app.state.syncStatus === SYNC_STATUS.error) return 'negative';
+    if (app.state.syncStatus === SYNC_STATUS.syncing || app.state.syncStatus === SYNC_STATUS.connecting) return 'warning';
+    return 'positive';
 });
 
 const syncLabel = computed(() => {
+    if (isLocal.value) return 'Локальный режим';
     switch (app.state.syncStatus) {
         case SYNC_STATUS.syncing:
         case SYNC_STATUS.connecting:
@@ -100,6 +149,7 @@ const syncLabel = computed(() => {
 });
 
 const syncTooltip = computed(() => {
+    if (isLocal.value) return 'Данные хранятся только в этом браузере';
     if (app.state.syncStatus === SYNC_STATUS.error) {
         return `Ошибка синхронизации: ${app.state.syncError || 'неизвестная ошибка'}`;
     }
@@ -108,91 +158,157 @@ const syncTooltip = computed(() => {
     return 'Подключение к облаку';
 });
 
+const loginIcon = computed(() => isLocal.value ? 'sym_o_login' : 'sym_o_logout');
+const logoutBtnLabel = computed(() => isLocal.value ? 'Войти' : 'Выйти');
+
 const logoutBtnClick = async () => {
-    if (app.state.mode === APP_MODE.remote) await app.logout()
-    $router.push({ name: PAGES.Login })
-}
-
-const exportDataBtnClick = async () => {
-    try {
-        const res = await app.userDb!.db.allDocs({ include_docs: true });
-
-        const exportData = {
-            docs: res.rows.map((d) => d.doc),
-        }
-        console.log(exportData)
-        
-        // Преобразуем данные в JSON строку с форматированием
-        const jsonString = JSON.stringify(exportData, null, 2);
-        
-        // Создаем Blob с типом text/plain для plain text файла
-        const blob = new Blob([jsonString], { type: 'text/plain;charset=utf-8' });
-        
-        downloadBlobFile(blob, `day_wallet_export_${new Date().toISOString().split('T')[0]}.json`);
-    } catch (error) {
-        console.error('Ошибка при экспорте данных:', error);
-    }
-}
-
-type ImportedDoc = { _id: string, _rev?: string, type?: string, [key: string]: unknown }
-
-const importDataBtnClick = () => {
-    if (app.state.mode !== APP_MODE.local) {
-        $q.notify({ type: 'warning', message: 'Импорт доступен только в оффлайн-режиме' })
-        return
-    }
-    importFileInput.value?.click()
-}
-
-/** Загружает экспорт Day Wallet в текущую локальную БД (upsert по _id) */
-const handleImportFile = async (event: Event) => {
-    const input = event.target as HTMLInputElement
-    const file = input.files?.[0]
-    input.value = ''  // позволяет выбрать тот же файл повторно
-    if (!file || !app.userDb) return
-
-    try {
-        const parsed = JSON.parse(await file.text()) as { docs?: ImportedDoc[] }
-        const docs = (parsed.docs || []).filter(doc => doc?._id && !doc._id.startsWith('_'))
-        if (!docs.length) throw new Error('В файле нет документов Day Wallet')
-
-        const db = app.userDb.db
-        const existing = await db.allDocs({ keys: docs.map(doc => doc._id), include_docs: false })
-        const revById = new Map<string, string>()
-        for (const row of existing.rows as Array<{ id: string, value?: { rev: string } }>) {
-            if (row.value?.rev) revById.set(row.id, row.value.rev)
-        }
-
-        const toSave = docs.map(doc => {
-            const copy = { ...doc }
-            const rev = revById.get(doc._id)
-            if (rev) copy._rev = rev
-            else delete copy._rev
-            return copy
-        })
-
-        const results = await db.bulkDocs(toSave)
-        const failed = results.filter(result => 'error' in result).length
-        if (failed) throw new Error(`Не удалось загрузить документов: ${failed}`)
-
-        $q.notify({ type: 'positive', message: `Загружено документов: ${toSave.length}` })
-        setTimeout(() => window.location.reload(), 600)
-    } catch (error) {
-        console.error('Ошибка импорта данных:', error)
-        $q.notify({
-            type: 'negative',
-            message: error instanceof Error ? error.message : 'Ошибка импорта',
-        })
-    }
-}
+    if (!isLocal.value) await app.logout();
+    $router.push({ name: PAGES.Login });
+};
 </script>
 
-<style lang="scss">
-.toolbar {
-    height: 50px;
+<style lang="scss" scoped>
+.app-layout {
+    background: #f5f7f6;
+    height: 100vh;
+    min-height: 100vh;
+    overflow: hidden;
 }
 
-.page-container {
-    height: calc(100% - 50px);
+.app-header {
+    background: #fff;
+    color: #111827;
+    box-shadow: 0 1px 0 #e5e7eb;
+}
+
+.app-toolbar {
+    min-height: 48px;
+    padding: 0 10px;
+    gap: 2px;
+}
+
+.app-header__menu {
+    color: #4b5563;
+}
+
+.app-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 4px;
+    cursor: pointer;
+}
+
+.app-brand__name {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+    color: #111827;
+}
+
+.app-header__sep {
+    height: 20px;
+    margin: 0 10px;
+}
+
+.app-header__section {
+    font-size: 14px;
+    font-weight: 500;
+    color: #4b5563;
+}
+
+.app-header__sync {
+    font-size: 12px;
+}
+
+.app-header__user {
+    color: #4b5563;
+}
+
+.app-drawer {
+    background: #f8faf9;
+    border-right: 1px solid #e5e7eb;
+}
+
+.app-drawer__inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 8px;
+}
+
+.app-nav {
+    padding: 0;
+}
+
+.app-nav__item {
+    min-height: 40px;
+    border-radius: 8px;
+    color: #374151;
+    font-size: 14px;
+}
+
+.app-nav__item--active {
+    background: rgba(6, 95, 70, 0.09);
+    color: #065f46;
+    font-weight: 500;
+}
+
+.app-nav__item--active .q-icon {
+    color: #065f46;
+}
+
+.app-nav__avatar {
+    min-width: 36px;
+    padding-right: 6px;
+}
+
+.app-nav__label {
+    font-size: 14px;
+}
+
+.app-drawer__sep {
+    margin: 8px 4px;
+}
+
+.app-drawer__meta {
+    display: grid;
+    gap: 6px;
+    padding: 8px 10px 10px;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.app-drawer__meta-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.app-page-container {
+    background: #f5f7f6;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.app-mobile-nav {
+    background: #fff;
+    color: #4b5563;
+    border-top: 1px solid #e5e7eb;
+}
+
+.app-mobile-tabs {
+    height: 56px;
+}
+
+.app-mobile-tab {
+    min-height: 56px;
+    padding: 0;
+}
+
+.app-mobile-tab :deep(.q-tab__label) {
+    font-size: 11px;
+    line-height: 1.2;
 }
 </style>

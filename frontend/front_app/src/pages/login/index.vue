@@ -254,7 +254,7 @@ const handleLogin = async () => {
             else await app.dismissLocalImport()
         }
 
-        $router.push({ name: PAGES.Index });
+        $router.push({ name: PAGES.Pulse });
     }).catch((err) => {
         console.error(err);
         $q.notify({
@@ -313,7 +313,7 @@ const loginWithGoogle = () => {
 
 // Переход в оффлайн режим
 const clickLocalModeBtn = () => {
-    $router.push({ name: PAGES.Index });
+    $router.push({ name: PAGES.Pulse });
 };
 </script>
 
