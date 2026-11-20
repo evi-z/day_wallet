@@ -1,6 +1,6 @@
 import { useDatabaseDocumentRef } from './base'
 import app from 'src/services/app'
-import type { BudgetPeriodDBData, BudgetSettingsDBData } from 'src/models/database'
+import type { BudgetPeriodDBData, BudgetSettingsDBData, BudgetTemplateDBData } from 'src/models/database'
 import type { BudgetCategory } from 'src/domain/budget/types'
 import { createDefaultCategories } from 'src/domain/budget/defaults'
 
@@ -47,4 +47,21 @@ export const ensureBudgetTemplate = async (): Promise<BudgetCategory[]> => {
     if (doc) await app.userDb!.saveBudgetTemplate({ ...doc, categories })
     else await app.userDb!.createBudgetTemplate(categories)
     return categories
+}
+
+/** Шаблон статей с автосохранением — для страницы «Структура» */
+export const useBudgetTemplateRef = () => {
+    return useDatabaseDocumentRef<BudgetTemplateDBData>({
+        initFn: async () => {
+            let doc = await app.userDb!.fetchBudgetTemplate()
+            if (!doc) {
+                await app.userDb!.createBudgetTemplate(createDefaultCategories())
+                doc = await app.userDb!.fetchBudgetTemplate()
+            }
+            return doc!
+        },
+        saveFn: (doc) => app.userDb!.saveBudgetTemplate(doc),
+        bindToRemote: remoteBinding(),
+        saveDebounceMs: 500,
+    })
 }

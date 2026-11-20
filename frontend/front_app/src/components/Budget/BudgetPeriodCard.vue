@@ -6,24 +6,30 @@
 
         <template v-else>
             <div class="period-head">
-                <div class="period-main">
-                    <q-input v-model="period.label" dense borderless class="period-label"
-                        placeholder="Название периода" />
-                    <div class="period-chips">
-                        <span class="chip chip--muted">Доход {{ formatMoney(totals.incomeTotal) }}</span>
-                        <span class="chip chip--muted">Распределено {{ formatMoney(totals.allocatedTotal) }}</span>
-                        <span class="chip" :class="totals.freeTotal < 0 ? 'chip--negative' : 'chip--positive'">
-                            Свободно {{ formatMoney(totals.freeTotal) }}
-                        </span>
-                    </div>
+                <q-btn flat round dense size="sm" class="period-toggle"
+                    :icon="collapsed ? 'sym_o_expand_more' : 'sym_o_expand_less'"
+                    :aria-label="collapsed ? 'Развернуть период' : 'Свернуть период'" @click="toggleCollapsed" />
+
+                <q-input v-model="period.label" dense borderless class="period-label"
+                    placeholder="Название периода" />
+
+                <div class="period-chips">
+                    <span v-if="period.incomes.length === 1" class="period-income-label">Доход</span>
+                    <MoneyInput v-if="period.incomes.length === 1" v-model="period.incomes[0]!.amount"
+                        class="period-income" dense outlined />
+                    <span v-else class="chip chip--muted">Доход {{ formatMoney(totals.incomeTotal) }}</span>
+                    <span class="chip chip--muted">Распределено {{ formatMoney(totals.allocatedTotal) }}</span>
+                    <span class="chip" :class="totals.freeTotal < 0 ? 'chip--negative' : 'chip--positive'">
+                        Свободно {{ formatMoney(totals.freeTotal) }}
+                    </span>
                 </div>
 
                 <q-btn flat round dense icon="sym_o_more_horiz" class="period-menu">
                     <q-menu>
-                        <q-list dense style="min-width: 210px">
-                            <q-item clickable v-close-popup @click="structureOpen = true">
+                        <q-list dense style="min-width: 220px">
+                            <q-item clickable v-close-popup @click="openStructure">
                                 <q-item-section avatar><q-icon name="sym_o_account_tree" size="18px" /></q-item-section>
-                                <q-item-section>Настроить статьи</q-item-section>
+                                <q-item-section>Шаблоны и счета</q-item-section>
                             </q-item>
                             <q-item clickable v-close-popup @click="makeTemplate">
                                 <q-item-section avatar><q-icon name="sym_o_bookmark_added" size="18px" /></q-item-section>
@@ -39,90 +45,89 @@
                 </q-btn>
             </div>
 
-            <q-separator />
+            <div v-show="!collapsed">
+                <q-separator />
 
-            <div class="period-body">
-                <div class="section-label">Приходы</div>
-                <div class="income-list">
-                    <BudgetIncomeBlock v-for="income in period.incomes" :key="income.id" :income="income"
-                        :period="period" @remove="removeIncome" />
-                </div>
-                <q-btn flat dense no-caps color="primary" icon="sym_o_add" label="Добавить приход"
-                    class="add-income" @click="addIncome" />
+                <div class="period-body">
+                    <div class="section-label">Приходы</div>
+                    <div class="income-list">
+                        <BudgetIncomeBlock v-for="income in period.incomes" :key="income.id" :income="income"
+                            :period="period" :accounts="accounts" :ensure-account="ensureAccount"
+                            :show-amount="period.incomes.length > 1" :show-totals="period.incomes.length > 1"
+                            @remove="removeIncome" />
+                    </div>
+                    <q-btn flat dense no-caps color="primary" icon="sym_o_add" label="Добавить приход"
+                        class="add-income" @click="addIncome" />
 
-                <div class="section-label section-label--savings">
-                    Сбережения
-                    <q-btn flat dense round size="sm" icon="sym_o_add" @click="addSavingsAccount">
-                        <q-tooltip>Новый сберегательный счёт</q-tooltip>
-                    </q-btn>
-                </div>
-
-                <div v-if="!accounts.length" class="savings-empty">
-                    Сберегательных счетов пока нет. Создайте счёт и привяжите к статье, чтобы
-                    распределять в него деньги.
-                </div>
-
-                <div v-for="account in accounts" :key="account.id" class="savings-row">
-                    <div class="savings-name">
-                        <q-icon name="sym_o_savings" size="16px" class="savings-icon" />
-                        <span>{{ account.name }}</span>
-                        <q-btn flat round dense size="xs" icon="sym_o_more_horiz" class="savings-menu">
-                            <q-menu>
-                                <q-list dense>
-                                    <q-item clickable v-close-popup @click="editInitialBalance(account)">
-                                        <q-item-section>Начальный остаток</q-item-section>
-                                    </q-item>
-                                    <q-item clickable v-close-popup @click="removeAccount(account)">
-                                        <q-item-section>Удалить счёт</q-item-section>
-                                    </q-item>
-                                </q-list>
-                            </q-menu>
+                    <div class="section-label section-label--savings">
+                        Сбережения
+                        <q-btn flat dense round size="sm" icon="sym_o_add" @click="addSavingsAccount">
+                            <q-tooltip>Новый сберегательный счёт</q-tooltip>
                         </q-btn>
                     </div>
-                    <div class="savings-metric">
-                        <span class="savings-metric__label">из приходов</span>
-                        <span class="savings-metric__value">{{ formatMoney(savings[account.id]?.allocatedInPeriod ?? 0) }}</span>
-                    </div>
-                    <div class="savings-delta">
-                        <span class="savings-metric__label">доп. пополнение</span>
-                        <MoneyInput :model-value="deltaOf(account.id)" dense outlined
-                            @update:model-value="value => setDelta(account.id, value)" />
-                    </div>
-                    <div class="savings-balance">
-                        <span class="savings-metric__label">остаток</span>
-                        <span class="savings-metric__value">{{ formatMoney(savings[account.id]?.balance ?? 0) }}</span>
-                    </div>
-                </div>
 
-                <q-input v-model="period.notes" type="textarea" autogrow outlined dense
-                    label="Заметки периода" class="period-notes" />
+                    <div v-if="!accounts.length" class="savings-empty">
+                        Сберегательных счетов пока нет. Создайте счёт и привяжите к статье через меню статьи.
+                    </div>
+
+                    <div v-for="account in accounts" :key="account.id" class="savings-row">
+                        <div class="savings-name">
+                            <q-icon name="sym_o_savings" size="16px" class="savings-icon" />
+                            <span>{{ account.name }}</span>
+                            <q-btn flat round dense size="xs" icon="sym_o_more_horiz" class="savings-menu">
+                                <q-menu>
+                                    <q-list dense>
+                                        <q-item clickable v-close-popup @click="editInitialBalance(account)">
+                                            <q-item-section>Начальный остаток</q-item-section>
+                                        </q-item>
+                                        <q-item clickable v-close-popup @click="removeAccount(account)">
+                                            <q-item-section>Удалить счёт</q-item-section>
+                                        </q-item>
+                                    </q-list>
+                                </q-menu>
+                            </q-btn>
+                        </div>
+                        <div class="savings-metric">
+                            <span class="savings-metric__label">из приходов</span>
+                            <span class="savings-metric__value">{{ formatMoney(savings[account.id]?.allocatedInPeriod ?? 0) }}</span>
+                        </div>
+                        <div class="savings-delta">
+                            <span class="savings-metric__label">доп. пополнение</span>
+                            <MoneyInput :model-value="deltaOf(account.id)" dense outlined
+                                class="savings-delta__input" @update:model-value="value => setDelta(account.id, value)" />
+                        </div>
+                        <div class="savings-balance">
+                            <span class="savings-metric__label">остаток</span>
+                            <span class="savings-metric__value">{{ formatMoney(savings[account.id]?.balance ?? 0) }}</span>
+                        </div>
+                    </div>
+
+                    <q-input v-model="period.notes" type="textarea" autogrow outlined dense
+                        label="Заметки периода" class="period-notes" />
+                </div>
             </div>
         </template>
     </q-card>
-
-    <BudgetStructureDialog v-if="ready" v-model="structureOpen" :categories="period.categories"
-        :accounts="accounts" :has-allocations="hasAllocations" :ensure-account="ensureAccount"
-        @save="saveStructure" />
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
+import { useRouter } from 'vue-router';
 import MoneyInput from 'src/components/MoneyInput/index.vue';
 import BudgetIncomeBlock from './BudgetIncomeBlock.vue';
-import BudgetStructureDialog from './BudgetStructureDialog.vue';
 import { useBudgetPeriodRef } from 'src/services/database/wrappers/budget';
 import {
     calcAllSavingsBalances,
     calcPeriodTotals,
     isSavingsAccountUsed,
     listLeaves,
-    hasLeafAllocations,
 } from 'src/domain/budget/calc';
 import { formatMoney } from 'src/domain/budget/format';
 import { createBudgetId, createIncome } from 'src/domain/budget/defaults';
 import type { BudgetCategory, BudgetIncome, BudgetSavingsAccount } from 'src/domain/budget/types';
 import type { BudgetPeriodDBData } from 'src/models/database';
+import { PAGES } from 'src/router/models';
 
 const props = defineProps<{
     docId: string,
@@ -131,6 +136,7 @@ const props = defineProps<{
     ensureAccount: (name: string) => string,
     removeAccount: (accountId: string) => void,
     setAccountInitial: (accountId: string, value: number) => void,
+    isLatest?: boolean,
 }>()
 
 const emit = defineEmits<{
@@ -140,9 +146,12 @@ const emit = defineEmits<{
 }>()
 
 const $q = useQuasar()
+const $router = useRouter()
 const periodRef = useBudgetPeriodRef(props.docId)
 const ready = ref(false)
-const structureOpen = ref(false)
+
+const storageKey = `day-wallet:budget-collapsed:${props.docId}`
+const collapsed = ref(false)
 
 const period = computed(() => periodRef.value)
 const totals = computed(() => calcPeriodTotals(period.value))
@@ -153,14 +162,15 @@ const savings = computed(() => {
     return calcAllSavingsBalances([...others, own], props.accounts, own)
 })
 
-const hasAllocations = (leafId: string) => hasLeafAllocations(period.value, leafId)
-
 const notifyChanged = async () => { emit('changed') }
 
 onMounted(async () => {
     try {
         await periodRef.initFromDB()
         ready.value = true
+
+        applyDefaultCollapsed()
+
         periodRef.bindValuesWatcher(notifyChanged)
     } catch (error) {
         console.error('Не удалось открыть период бюджета:', error)
@@ -169,6 +179,22 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => periodRef.unbindValuesWatcher(notifyChanged))
+
+const applyDefaultCollapsed = () => {
+    const stored = localStorage.getItem(storageKey)
+    if (stored !== null) {
+        collapsed.value = stored === '1'
+        return
+    }
+    collapsed.value = !props.isLatest
+}
+
+watch(() => props.isLatest, () => applyDefaultCollapsed())
+
+const toggleCollapsed = () => {
+    collapsed.value = !collapsed.value
+    try { localStorage.setItem(storageKey, collapsed.value ? '1' : '0') } catch { /* приватный режим */ }
+}
 
 const addIncome = () => {
     period.value.incomes.push(createIncome('Приход', 0))
@@ -179,8 +205,8 @@ const removeIncome = (income: BudgetIncome) => {
     if (index !== -1) period.value.incomes.splice(index, 1)
 }
 
-const saveStructure = (categories: BudgetCategory[]) => {
-    period.value.categories = categories
+const openStructure = () => {
+    void $router.push({ name: PAGES.BudgetStructure })
 }
 
 const makeTemplate = () => {
@@ -254,7 +280,7 @@ const removeAccount = (account: BudgetSavingsAccount) => {
     if (linked) {
         $q.notify({
             type: 'warning',
-            message: 'Счёт привязан к статье. Сначала отвяжите его в «Настроить статьи».',
+            message: 'Счёт привязан к статье. Сначала выберите «Без счёта» в меню статьи.',
         })
         return
     }
@@ -296,17 +322,19 @@ const editInitialBalance = (account: BudgetSavingsAccount) => {
 
 .period-head {
     display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 8px 10px 6px 14px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 6px 10px 6px 8px;
 }
 
-.period-main {
-    flex: 1 1 auto;
-    min-width: 0;
+.period-toggle {
+    color: #6b7280;
 }
 
 .period-label {
+    flex: 0 1 auto;
+    min-width: 140px;
     font-size: 15px;
     font-weight: 600;
 }
@@ -315,11 +343,44 @@ const editInitialBalance = (account: BudgetSavingsAccount) => {
     font-weight: 600;
 }
 
+.period-label :deep(.q-field__control) {
+    height: 30px;
+    min-height: 30px;
+}
+
 .period-chips {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 4px;
-    margin-top: 2px;
+    margin-left: auto;
+}
+
+.period-income {
+    flex: 0 0 132px;
+    width: 132px;
+    margin-right: 4px;
+}
+
+.period-income-label {
+    color: #9ca3af;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.period-income :deep(.q-field__control) {
+    height: 30px;
+    min-height: 30px;
+}
+
+.period-income :deep(.q-field__marginal) {
+    height: 30px;
+}
+
+.period-income :deep(input) {
+    font-size: 12.5px;
+    font-weight: 600;
 }
 
 .chip {
@@ -346,18 +407,19 @@ const editInitialBalance = (account: BudgetSavingsAccount) => {
 }
 
 .period-menu {
+    flex: 0 0 auto;
     color: #6b7280;
 }
 
 .period-body {
-    padding: 10px 14px 14px;
+    padding: 8px 14px 12px;
 }
 
 .section-label {
     display: flex;
     align-items: center;
     gap: 2px;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     color: #6b7280;
     font-size: 11px;
     font-weight: 600;
@@ -366,7 +428,7 @@ const editInitialBalance = (account: BudgetSavingsAccount) => {
 }
 
 .section-label--savings {
-    margin-top: 14px;
+    margin-top: 12px;
 }
 
 .income-list {
@@ -376,7 +438,7 @@ const editInitialBalance = (account: BudgetSavingsAccount) => {
 }
 
 .add-income {
-    margin-top: 4px;
+    margin-top: 2px;
 }
 
 .savings-empty {
@@ -390,7 +452,7 @@ const editInitialBalance = (account: BudgetSavingsAccount) => {
     grid-template-columns: minmax(130px, 1.2fr) minmax(100px, 0.8fr) 150px minmax(110px, 0.8fr);
     gap: 10px;
     align-items: center;
-    padding: 6px 0;
+    padding: 4px 0;
     border-bottom: 1px solid #f1f5f9;
 }
 
@@ -442,13 +504,36 @@ const editInitialBalance = (account: BudgetSavingsAccount) => {
     font-weight: 600;
 }
 
+.savings-delta__input :deep(.q-field__control) {
+    height: 30px;
+    min-height: 30px;
+}
+
+.savings-delta__input :deep(.q-field__marginal) {
+    height: 30px;
+}
+
+.savings-delta__input :deep(input) {
+    font-size: 12.5px;
+}
+
 .period-notes {
-    margin-top: 14px;
+    margin-top: 12px;
 }
 
 @media (max-width: 767px) {
     .period-body {
-        padding: 8px 10px 12px;
+        padding: 6px 10px 10px;
+    }
+
+    .period-label {
+        flex: 1 1 150px;
+    }
+
+    .period-chips {
+        order: 5;
+        width: 100%;
+        margin-left: 0;
     }
 
     .savings-row {

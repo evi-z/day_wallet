@@ -16,6 +16,7 @@ export const PAGES = {
     Accounts: "Accounts",
     Expenses: "Expenses",
     Plan: "Plan",
+    BudgetStructure: "BudgetStructure",
     Settings: "Settings",
 } as const;
 

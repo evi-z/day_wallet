@@ -7,27 +7,49 @@
                 <div class="budget-title">Бюджетирование</div>
                 <div class="budget-subtitle">Приходы, статьи и сбережения по финансовым периодам</div>
             </div>
-            <q-btn unelevated no-caps color="primary" icon="sym_o_add" label="Период" class="budget-add"
-                @click="createOpen = true" />
-        </div>
-
-        <div v-if="!loading && !periods.length" class="budget-empty">
-            <q-icon name="sym_o_trending_up" size="40px" />
-            <div class="budget-empty__title">Пока нет ни одного периода</div>
-            <div class="budget-empty__text">
-                Создайте период, укажите приход и распределите его по статьям.
-                Сберегательные счета можно добавить отдельно.
+            <div class="budget-actions">
+                <q-btn flat dense no-caps icon="sym_o_account_tree" class="budget-structure"
+                    :label="$q.screen.gt.xs ? 'Структура' : undefined"
+                    @click="openStructure">
+                    <q-tooltip>Шаблоны и сберегательные счета</q-tooltip>
+                </q-btn>
+                <q-btn unelevated no-caps color="primary" icon="sym_o_add" label="Период"
+                    @click="createOpen = true" />
             </div>
-            <q-btn unelevated no-caps color="primary" icon="sym_o_add" label="Создать период"
-                @click="createOpen = true" />
         </div>
 
-        <div class="budget-list">
-            <BudgetPeriodCard v-for="doc in periods" :key="doc._id" :doc-id="doc._id" :periods="periods"
-                :accounts="accounts" :ensure-account="ensureAccount" :remove-account="removeAccount"
-                :set-account-initial="setAccountInitial" @delete="handleDelete" @changed="scheduleReload"
-                @make-template="handleMakeTemplate" />
-        </div>
+        <q-tabs v-model="tab" dense no-caps align="left" class="budget-tabs"
+            active-color="primary" indicator-color="primary" :mobile-arrows="false">
+            <q-tab name="allocations" label="Распределения" />
+            <q-tab name="summary" label="Сводка" />
+        </q-tabs>
+
+        <q-tab-panels v-model="tab" class="budget-panels" animated>
+            <q-tab-panel name="allocations" class="budget-panel">
+                <div v-if="!loading && !periods.length" class="budget-empty">
+                    <q-icon name="sym_o_trending_up" size="40px" />
+                    <div class="budget-empty__title">Пока нет ни одного периода</div>
+                    <div class="budget-empty__text">
+                        Создайте период, укажите приход и распределите его по статьям.
+                        Сберегательные счета можно добавить отдельно.
+                    </div>
+                    <q-btn unelevated no-caps color="primary" icon="sym_o_add" label="Создать период"
+                        @click="createOpen = true" />
+                </div>
+
+                <div v-if="periods.length" class="budget-list">
+                    <BudgetPeriodCard v-for="(doc, index) in periods" :key="doc._id" :doc-id="doc._id"
+                        :periods="periods" :accounts="accounts" :ensure-account="ensureAccount"
+                        :remove-account="removeAccount" :set-account-initial="setAccountInitial"
+                        :is-latest="index === periods.length - 1" @delete="handleDelete"
+                        @changed="scheduleReload" @make-template="handleMakeTemplate" />
+                </div>
+            </q-tab-panel>
+
+            <q-tab-panel name="summary" class="budget-panel">
+                <BudgetSummary :periods="periods" :accounts="accounts" />
+            </q-tab-panel>
+        </q-tab-panels>
 
         <BudgetPeriodDialog v-model="createOpen" :suggested-label="suggestedLabel" @create="handleCreate" />
     </q-page>
@@ -36,20 +58,25 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useQuasar } from 'quasar';
+import { useRouter } from 'vue-router';
 import InnerLoading from 'src/components/InnerLoading/index.vue';
 import BudgetPeriodCard from 'src/components/Budget/BudgetPeriodCard.vue';
 import BudgetPeriodDialog from 'src/components/Budget/BudgetPeriodDialog.vue';
+import BudgetSummary from 'src/components/Budget/BudgetSummary.vue';
 import app from 'src/services/app';
 import { ensureBudgetTemplate, useBudgetSettingsRef } from 'src/services/database/wrappers/budget';
 import { createBudgetId, createPeriodData, nextPeriodSeq, suggestNextLabel } from 'src/domain/budget/defaults';
 import type { BudgetCategory } from 'src/domain/budget/types';
 import type { BudgetPeriodDBData } from 'src/models/database';
+import { PAGES } from 'src/router/models';
 
 const $q = useQuasar()
+const $router = useRouter()
 
 const loading = ref(true)
 const periods = ref<BudgetPeriodDBData[]>([])
 const createOpen = ref(false)
+const tab = ref<'allocations' | 'summary'>('allocations')
 const settingsRef = useBudgetSettingsRef()
 
 const accounts = computed(() => settingsRef.value.savingsAccounts ?? [])
@@ -85,6 +112,10 @@ onMounted(async () => {
 onBeforeUnmount(() => {
     if (reloadTimer) clearTimeout(reloadTimer)
 })
+
+const openStructure = () => {
+    void $router.push({ name: PAGES.BudgetStructure })
+}
 
 const ensureAccount = (name: string): string => {
     const accountsList = settingsRef.value.savingsAccounts || (settingsRef.value.savingsAccounts = [])
@@ -123,6 +154,7 @@ const handleCreate = async (payload: { label: string, incomeName: string, income
         })
         await app.userDb!.createBudgetPeriod(data)
         await loadPeriods()
+        tab.value = 'allocations'
     } catch (error) {
         console.error('Не удалось создать период бюджета:', error)
         $q.notify({ type: 'negative', message: 'Не удалось создать период' })
@@ -153,8 +185,11 @@ const handleMakeTemplate = async (categories: BudgetCategory[]) => {
 
 <style lang="scss" scoped>
 .budget-page {
-    padding: 10px 16px 20px;
-    max-width: 1100px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 100%;
+    padding: 10px 20px 24px;
 }
 
 .budget-head {
@@ -162,7 +197,7 @@ const handleMakeTemplate = async (categories: BudgetCategory[]) => {
     align-items: flex-end;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .budget-title {
@@ -178,9 +213,44 @@ const handleMakeTemplate = async (categories: BudgetCategory[]) => {
     font-size: 12px;
 }
 
-.budget-add {
+.budget-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     flex: 0 0 auto;
-    white-space: nowrap;
+}
+
+.budget-structure {
+    color: #4b5563;
+}
+
+.budget-tabs {
+    margin: 0 -4px 8px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.budget-tabs :deep(.q-tab) {
+    min-height: 34px;
+    padding: 0 12px;
+    color: #4b5563;
+}
+
+.budget-tabs :deep(.q-tab--active) {
+    color: $primary;
+    font-weight: 500;
+}
+
+.budget-tabs :deep(.q-tab__indicator) {
+    height: 2px;
+}
+
+.budget-panels {
+    flex: 1 1 auto;
+    background: transparent;
+}
+
+.budget-panel {
+    padding: 0;
 }
 
 .budget-list {
@@ -194,7 +264,7 @@ const handleMakeTemplate = async (categories: BudgetCategory[]) => {
     flex-direction: column;
     align-items: center;
     gap: 10px;
-    margin-top: 16px;
+    margin-top: 12px;
     padding: 36px 20px;
     border: 1px dashed #d1d5db;
     border-radius: 12px;
@@ -225,6 +295,10 @@ const handleMakeTemplate = async (categories: BudgetCategory[]) => {
 
     .budget-title {
         font-size: 16px;
+    }
+
+    .budget-subtitle {
+        display: none;
     }
 }
 </style>

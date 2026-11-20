@@ -32,6 +32,11 @@ const routes: RouteRecordRaw[] = [
             component: () => import('pages/PlanPage.vue'),
             meta: { title: 'Бюджет', icon: 'sym_o_trending_up' },
         }, {
+            path: 'plan/structure',
+            name: PAGES.BudgetStructure,
+            component: () => import('pages/BudgetStructurePage.vue'),
+            meta: { title: 'Структура бюджета', icon: 'sym_o_account_tree' },
+        }, {
             path: 'settings',
             name: PAGES.Settings,
             component: () => import('pages/SettingsPage.vue'),
