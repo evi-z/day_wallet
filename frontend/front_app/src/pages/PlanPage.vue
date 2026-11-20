@@ -41,7 +41,7 @@
 
             <q-tab-panel name="structure" class="budget-panel">
                 <BudgetStructurePanel :periods="periods" :accounts="accounts"
-                    :ensure-account="ensureAccount" :remove-account="removeAccount" @changed="scheduleReload" />
+                    :ensure-account="ensureAccount" :remove-account="removeAccount" />
             </q-tab-panel>
         </q-tab-panels>
 

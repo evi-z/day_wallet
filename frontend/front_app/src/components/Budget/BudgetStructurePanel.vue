@@ -27,43 +27,29 @@
 
                 <template v-if="accounts.length">
                     <div class="account-row account-row--head">
-                        <span />
                         <span>Счёт</span>
                         <span>Начальный остаток</span>
                         <span>Сейчас</span>
                         <span />
                     </div>
 
-                    <template v-for="account in accounts" :key="account.id">
-                        <div class="account-row">
-                            <q-btn flat round dense size="sm" class="account-expand"
-                                :icon="expandedAccountId === account.id ? 'sym_o_expand_less' : 'sym_o_expand_more'"
-                                @click="toggleAccount(account.id)">
-                                <q-tooltip>Пополнения по периодам</q-tooltip>
-                            </q-btn>
-                            <q-input v-model="account.name" dense borderless class="account-name"
-                                placeholder="Название счёта" />
-                            <div class="account-field">
-                                <span class="account-label">начальный остаток</span>
-                                <MoneyInput v-model="account.initialBalance" dense outlined
-                                    class="account-money budget-field" />
-                            </div>
-                            <div class="account-field account-field--balance">
-                                <span class="account-label">сейчас</span>
-                                <span class="account-balance">{{ formatMoney(balanceOf(account.id)) }}</span>
-                            </div>
-                            <q-btn flat round dense size="sm" icon="sym_o_delete" class="account-delete"
-                                @click="removeAccount(account)">
-                                <q-tooltip>Удалить счёт</q-tooltip>
-                            </q-btn>
+                    <div v-for="account in accounts" :key="account.id" class="account-row">
+                        <q-input v-model="account.name" dense borderless class="account-name"
+                            placeholder="Название счёта" />
+                        <div class="account-field">
+                            <span class="account-label">начальный остаток</span>
+                            <MoneyInput v-model="account.initialBalance" dense outlined
+                                class="account-money budget-field" />
                         </div>
-
-                        <div v-if="expandedAccountId === account.id" class="account-history">
-                            <BudgetSavingsDeltaRow v-for="period in periods" :key="`${account.id}:${period._id}`"
-                                :period-id="period._id" :periods="periods" :account="account"
-                                @changed="emit('changed')" />
+                        <div class="account-field account-field--balance">
+                            <span class="account-label">сейчас</span>
+                            <span class="account-balance">{{ formatMoney(balanceOf(account.id)) }}</span>
                         </div>
-                    </template>
+                        <q-btn flat round dense size="sm" icon="sym_o_delete" class="account-delete"
+                            @click="removeAccount(account)">
+                            <q-tooltip>Удалить счёт</q-tooltip>
+                        </q-btn>
+                    </div>
                 </template>
             </q-card-section>
         </q-card>
@@ -75,7 +61,6 @@ import { computed, onMounted, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import MoneyInput from 'src/components/MoneyInput/index.vue';
 import BudgetCategoryRows from './BudgetCategoryRows.vue';
-import BudgetSavingsDeltaRow from './BudgetSavingsDeltaRow.vue';
 import { useBudgetTemplateRef } from 'src/services/database/wrappers/budget';
 import { calcAllSavingsBalances, isSavingsAccountUsed, listLeaves } from 'src/domain/budget/calc';
 import { formatMoney } from 'src/domain/budget/format';
@@ -89,13 +74,10 @@ const props = defineProps<{
     removeAccount: (accountId: string) => void,
 }>()
 
-const emit = defineEmits<{ changed: [] }>()
-
 const $q = useQuasar()
 const templateRef = useBudgetTemplateRef()
 
 const templateReady = ref(false)
-const expandedAccountId = ref('')
 
 const templateCategories = computed(() => templateRef.value.categories ?? [])
 const noAllocations = () => false
@@ -112,10 +94,6 @@ onMounted(async () => {
         $q.notify({ type: 'negative', message: 'Не удалось загрузить шаблон статей' })
     }
 })
-
-const toggleAccount = (accountId: string) => {
-    expandedAccountId.value = expandedAccountId.value === accountId ? '' : accountId
-}
 
 const addAccount = () => {
     $q.dialog({
@@ -196,7 +174,7 @@ const isAccountLinked = (accountId: string): boolean => {
 
 .account-row {
     display: grid;
-    grid-template-columns: 28px 260px 170px 120px 32px;
+    grid-template-columns: 260px 170px 120px 32px;
     gap: 14px;
     align-items: center;
     justify-content: start;
@@ -213,13 +191,9 @@ const isAccountLinked = (accountId: string): boolean => {
     letter-spacing: 0.02em;
 }
 
-.account-row--head span:nth-child(3),
-.account-row--head span:nth-child(4) {
+.account-row--head span:nth-child(2),
+.account-row--head span:nth-child(3) {
     text-align: right;
-}
-
-.account-expand {
-    color: #6b7280;
 }
 
 .account-name {
@@ -255,13 +229,9 @@ const isAccountLinked = (accountId: string): boolean => {
     color: #b91c1c;
 }
 
-.account-history {
-    margin-bottom: 4px;
-}
-
 @media (max-width: 767px) {
     .account-row {
-        grid-template-columns: 28px minmax(0, 1fr) 28px;
+        grid-template-columns: minmax(0, 1fr) 28px;
         justify-content: stretch;
         row-gap: 4px;
     }
@@ -271,12 +241,12 @@ const isAccountLinked = (accountId: string): boolean => {
     }
 
     .account-name {
-        grid-column: 2 / 3;
+        grid-column: 1 / 2;
         grid-row: 1;
     }
 
     .account-field {
-        grid-column: 2 / 4;
+        grid-column: 1 / 3;
     }
 
     .account-label {
@@ -288,7 +258,7 @@ const isAccountLinked = (accountId: string): boolean => {
     }
 
     .account-delete {
-        grid-column: 3 / 4;
+        grid-column: 2 / 3;
         grid-row: 1;
     }
 }

@@ -66,6 +66,12 @@
                                 <span class="savings-line__label">из приходов</span>
                                 <span class="savings-line__value">{{ formatMoney(savings[account.id]?.allocated ?? 0) }}</span>
                             </div>
+                            <div class="savings-line__metric">
+                                <span class="savings-line__label">доп. пополнение</span>
+                                <MoneyInput :model-value="deltaOf(account.id)" dense outlined
+                                    class="savings-line__input budget-field"
+                                    @update:model-value="value => setDelta(account.id, value)" />
+                            </div>
                             <div class="savings-line__metric savings-line__metric--balance">
                                 <span class="savings-line__label">остаток</span>
                                 <span class="savings-line__value">{{ formatMoney(savings[account.id]?.balance ?? 0) }}</span>
@@ -87,7 +93,12 @@ import { useQuasar } from 'quasar';
 import MoneyInput from 'src/components/MoneyInput/index.vue';
 import BudgetIncomeBlock from './BudgetIncomeBlock.vue';
 import { useBudgetPeriodRef } from 'src/services/database/wrappers/budget';
-import { calcPeriodTotals, calcSavingsAllocatedInPeriod, calcSavingsBalanceUpTo } from 'src/domain/budget/calc';
+import {
+    calcPeriodTotals,
+    calcSavingsAllocatedInPeriod,
+    calcSavingsBalanceUpTo,
+    calcSavingsDeltaInPeriod,
+} from 'src/domain/budget/calc';
 import { formatMoney } from 'src/domain/budget/format';
 import { createIncome } from 'src/domain/budget/defaults';
 import type { BudgetCategory, BudgetIncome, BudgetSavingsAccount } from 'src/domain/budget/types';
@@ -129,6 +140,14 @@ const savings = computed(() => {
     }
     return result
 })
+
+const deltaOf = (accountId: string) => calcSavingsDeltaInPeriod(period.value, accountId)
+
+const setDelta = (accountId: string, value: number) => {
+    if (!period.value.savingsDeltas) period.value.savingsDeltas = {}
+    if (value) period.value.savingsDeltas[accountId] = value
+    else delete period.value.savingsDeltas[accountId]
+}
 
 const notifyChanged = async () => { emit('changed') }
 
@@ -316,7 +335,7 @@ const confirmDelete = () => {
 
 .savings-line {
     display: grid;
-    grid-template-columns: minmax(180px, 240px) 120px 120px;
+    grid-template-columns: minmax(160px, 220px) 110px 150px 120px;
     gap: 16px;
     align-items: center;
     padding: 4px 6px;
@@ -365,6 +384,19 @@ const confirmDelete = () => {
 
 .savings-line__metric--balance .savings-line__value {
     font-weight: 600;
+}
+
+.savings-line__input {
+    width: 100%;
+}
+
+.savings-line__input :deep(.q-field__control) {
+    height: 30px;
+    min-height: 30px;
+}
+
+.savings-line__input :deep(.q-field__marginal) {
+    height: 30px;
 }
 
 .period-notes {
