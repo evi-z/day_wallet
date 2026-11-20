@@ -36,6 +36,13 @@ watch(value, (val) => {
     if (val !== numberValue.value) setValue(val ?? 0)
 }, { immediate: true })
 
+// Отдаём значение наружу уже во время ввода, не дожидаясь blur:
+// так форма не потеряет сумму, если пользователь сразу нажмёт кнопку.
+watch(numberValue, (val) => {
+    if (val === null || val === undefined) return
+    if (val !== value.value) value.value = val
+})
+
 const handleFocus = () => inputRef.value?.select()
 const handleBlur = () => { value.value = numberValue.value ?? 0 }
 const handleEnter = () => inputRef.value?.blur()

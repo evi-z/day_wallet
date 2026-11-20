@@ -99,7 +99,7 @@ const navItems = [
     { name: PAGES.Pulse, label: 'Пульс', icon: 'sym_o_monitor_heart' },
     { name: PAGES.Accounts, label: 'Счета', icon: 'sym_o_account_balance_wallet' },
     { name: PAGES.Expenses, label: 'Траты', icon: 'sym_o_receipt_long' },
-    { name: PAGES.Plan, label: 'План', icon: 'sym_o_trending_up' },
+    { name: PAGES.Plan, label: 'Бюджет', icon: 'sym_o_trending_up' },
 ];
 
 const mobileNav = [

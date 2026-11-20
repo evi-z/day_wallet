@@ -1,15 +1,7 @@
 {
   "extends": "./.quasar/tsconfig.json",
   "compilerOptions": {
-      "baseUrl": ".",
-      "paths": {
-          "@/*": [
-              "src/*"
-          ],
-          "~/*": [
-              "src/utils/*"
-          ]
-      },
+      "allowImportingTsExtensions": true,
       "allowJs": false,
       // `baseUrl` must be placed on the extending configuration in devland, or paths won't be recognized
       "esModuleInterop": true,
@@ -39,7 +31,6 @@
       "jsx": "preserve",
       "types": [
           "node",
-          "vite/client",
       ],
       "typeRoots": [
           "src/*.d.ts",
@@ -56,9 +47,10 @@
   },
   "include": [
       "src",
-      "src/*.d.ts",
-      "vite.config.ts",
-      "auto-imports.d.ts"
+      "src/**/*.d.ts",
+      ".quasar/shims-vue.d.ts",
+      ".quasar/feature-flags.d.ts",
+      "tests"
   ],
   "exclude": [
       "./dist",

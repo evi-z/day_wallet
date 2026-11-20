@@ -1,4 +1,5 @@
 import { PeriodDocInitDataFieldsMap } from "./period_doc"
+import type { BudgetPeriodData, BudgetSettingsData, BudgetTemplateData } from "src/domain/budget/types"
 
 export type DatabaseTypeDocumentBaseData<T extends string = string, D extends object = object> = D & PouchDB.Core.ExistingDocument<{
     /** Базовый тип документа с типом */
@@ -17,6 +18,9 @@ export const UserDBDataType = {  /** Типы данных для БД поль�
     document: 'document',  // Документ периода
     document_main_values: 'document_main_values',  // Основные значения документа периода
     document_calendar_fact_values: 'document_calendar_fact_values',  // Значения фактов календаря
+    budget_period: 'budget_period',  // Финансовый период бюджетирования
+    budget_settings: 'budget_settings',  // Настройки бюджетирования (сберегательные счета)
+    budget_template: 'budget_template',  // Шаблон статей для новых периодов
 } as const
 
 export type UserDBDataType = typeof UserDBDataType[keyof typeof UserDBDataType]
@@ -52,3 +56,12 @@ export type PeriodDocumentMainValuesDBData = BasePeriodDocumentRelationDocument<
 /** Значения фактов календаря */
 export type PeriodDocumentCalendarFactValuesData = Record<string, number>
 export type PeriodDocumentCalendarFactValuesDBData = BasePeriodDocumentRelationDocument<PeriodDocumentCalendarFactValuesData>
+
+/** Финансовый период бюджетирования: приходы, статьи и сбережения */
+export type BudgetPeriodDBData = UserDBAuditData<BudgetPeriodData>
+
+/** Настройки бюджетирования — один документ на пользователя */
+export type BudgetSettingsDBData = UserDBAuditData<BudgetSettingsData>
+
+/** Шаблон статей — один документ на пользователя */
+export type BudgetTemplateDBData = UserDBAuditData<BudgetTemplateData>

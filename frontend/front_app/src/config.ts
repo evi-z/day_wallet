@@ -14,5 +14,7 @@ export const config: IConfig = {
 
     /** Environment variables */
     BACKEND_API_PATH: process.env.BACKEND_API_PATH!,
+    BACKEND_DEV_HOSTNAME: process.env.BACKEND_DEV_HOSTNAME!,
+    BACKEND_DEV_PORT: process.env.BACKEND_DEV_PORT!,
     FRONTEND_DEV_PORT: process.env.FRONTEND_DEV_PORT!,
 } as const;

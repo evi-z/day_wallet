@@ -1,5 +1,9 @@
 
 export interface EnvVariables {
+  // Quasar
+  readonly DEV: string;
+  readonly PROD: string;
+  readonly MODE: string;
   // Backend
   readonly BACKEND_API_PATH: string;
   readonly BACKEND_DEV_HOSTNAME: string;

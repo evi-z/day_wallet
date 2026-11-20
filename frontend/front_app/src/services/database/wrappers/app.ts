@@ -16,7 +16,7 @@ export const useAppValuesRef = () => {
             }
             return values!
         },
-        saveFn: async (values: AppValuesData) => {
+        saveFn: async (values: AppValuesDBData) => {
             return await app.appDb!.putAppValues(values)
         }
     })

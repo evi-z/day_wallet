@@ -30,7 +30,7 @@ const routes: RouteRecordRaw[] = [
             path: 'plan',
             name: PAGES.Plan,
             component: () => import('pages/PlanPage.vue'),
-            meta: { title: 'План', icon: 'sym_o_trending_up' },
+            meta: { title: 'Бюджет', icon: 'sym_o_trending_up' },
         }, {
             path: 'settings',
             name: PAGES.Settings,

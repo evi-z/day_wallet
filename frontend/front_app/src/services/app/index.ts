@@ -167,7 +167,8 @@ class AppService {
             const docs = rows
                 .map(row => row.doc)
                 .filter((doc): doc is PouchDB.Core.ExistingDocument<object> => {
-                    return !!doc && !doc._id.startsWith('_') && !doc._deleted
+                    const candidate = doc as (PouchDB.Core.ExistingDocument<object> & { _deleted?: boolean }) | undefined
+                    return !!candidate && !candidate._id.startsWith('_') && !candidate._deleted
                 })
                 .map(doc => {
                     // Копируем содержимое без ревизии: конфликт с уже существующим

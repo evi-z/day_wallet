@@ -1,4 +1,6 @@
-import { PeriodDocumentCalendarFactValuesData, PeriodDocumentCalendarFactValuesDBData, PeriodDocumentDBData, PeriodDocumentFormData, PeriodDocumentMainValuesData, PeriodDocumentMainValuesDBData, UserDBDataType } from 'src/models/database'
+import { BudgetPeriodDBData, BudgetSettingsDBData, BudgetTemplateDBData, PeriodDocumentCalendarFactValuesData, PeriodDocumentCalendarFactValuesDBData, PeriodDocumentDBData, PeriodDocumentFormData, PeriodDocumentMainValuesData, PeriodDocumentMainValuesDBData, UserDBDataType } from 'src/models/database'
+import type { BudgetCategory, BudgetPeriodData, BudgetSettingsData } from 'src/domain/budget/types'
+import { createBudgetId } from 'src/domain/budget/defaults'
 import { BaseTypeDatabaseService } from './base'
 import { DBWithRemoteSync } from './mixins'
 
@@ -90,6 +92,89 @@ export class UserDatabaseService extends DBWithRemoteSync(BaseTypeDatabaseServic
                 document_id: documentId,
                 ...values,
             } as PeriodDocumentCalendarFactValuesData & { document_id: string })
+        })
+    }
+
+    /** Получает все периоды бюджетирования в порядке следования */
+    async fetchBudgetPeriods() {
+        // Сортировка в памяти: pouchdb-find требует готового индекса по seq,
+        // а порядок периодов — предметное правило приложения, а не запроса.
+        const docs = await this._findByType<BudgetPeriodDBData>(UserDBDataType.budget_period)
+        return docs.sort((a, b) => (Number(a.seq) || 0) - (Number(b.seq) || 0))
+    }
+
+    /** Создаёт новый финансовый период бюджетирования */
+    async createBudgetPeriod(data: BudgetPeriodData) {
+        const now = new Date().toISOString()
+        return this.db.put({
+            _id: `budget_period:${createBudgetId()}`,
+            type: UserDBDataType.budget_period,
+            ...data,
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    /** Сохраняет существующий период бюджетирования */
+    async saveBudgetPeriod(doc: BudgetPeriodDBData) {
+        return this.db.put({
+            ...doc,
+            updated_at: new Date().toISOString(),
+        })
+    }
+
+    /** Удаляет период бюджетирования */
+    async removeBudgetPeriod(documentId: string) {
+        return this.removeDocumentById(documentId)
+    }
+
+    /** Получает настройки бюджетирования */
+    async fetchBudgetSettings() {
+        return this.getByIdOrNull<BudgetSettingsDBData>('budget_settings')
+    }
+
+    /** Сохраняет настройки бюджетирования */
+    async saveBudgetSettings(doc: BudgetSettingsDBData) {
+        return this.db.put({
+            ...doc,
+            updated_at: new Date().toISOString(),
+        })
+    }
+
+    /** Создаёт настройки бюджетирования по умолчанию */
+    async createBudgetSettings(data: BudgetSettingsData = { savingsAccounts: [] }) {
+        const now = new Date().toISOString()
+        return this.db.put({
+            _id: 'budget_settings',
+            type: UserDBDataType.budget_settings,
+            ...data,
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    /** Получает шаблон статей */
+    async fetchBudgetTemplate() {
+        return this.getByIdOrNull<BudgetTemplateDBData>('budget_template')
+    }
+
+    /** Сохраняет шаблон статей */
+    async saveBudgetTemplate(doc: BudgetTemplateDBData) {
+        return this.db.put({
+            ...doc,
+            updated_at: new Date().toISOString(),
+        })
+    }
+
+    /** Создаёт шаблон статей */
+    async createBudgetTemplate(categories: BudgetCategory[]) {
+        const now = new Date().toISOString()
+        return this.db.put({
+            _id: 'budget_template',
+            type: UserDBDataType.budget_template,
+            categories,
+            created_at: now,
+            updated_at: now,
         })
     }
 }

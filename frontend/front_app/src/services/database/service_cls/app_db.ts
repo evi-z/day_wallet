@@ -1,7 +1,7 @@
 
 import { AppUser } from 'src/models/user'
 import { BaseDatabaseService } from './base'
-import { AppValuesData } from 'src/models/database'
+import { AppValuesDBData, AppValuesData } from 'src/models/app'
 
 const DATABASE_NAME = 'day-wallet-app-db'
 const USER_DATA_KEY = 'auth_user'
@@ -40,16 +40,16 @@ export class AppDatabaseService extends BaseDatabaseService {
 
     async getAppValues() {
         /** Получает значения приложения */
-        return this.getByIdOrNull<AppValuesData>(APP_VALUES_KEY)
+        return this.getByIdOrNull<AppValuesDBData>(APP_VALUES_KEY)
     }
 
-    async putAppValues(data: AppValuesData) {
+    async putAppValues(data: Partial<AppValuesData>) {
         /** Сохраняет значения приложения */
-        const currentDoc = await this.getByIdOrNull<AppValuesData>(APP_VALUES_KEY)
+        const currentDoc = await this.getByIdOrNull<AppValuesDBData>(APP_VALUES_KEY)
         const newData = {
+            ...(currentDoc || { lastPeriodDocument: null }),
+            ...data,
             _id: APP_VALUES_KEY,
-            ...(currentDoc || {}),
-            ...data
         }
 
         return this.db.put(newData)
