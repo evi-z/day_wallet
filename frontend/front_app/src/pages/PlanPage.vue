@@ -136,9 +136,13 @@ const handleDelete = async (docId: string) => {
 
 const handleMakeTemplate = async (categories: BudgetCategory[]) => {
     try {
+        const snapshot = categories.map(category => ({
+            ...category,
+            children: category.children.map(child => ({ ...child })),
+        }))
         const template = await app.userDb!.fetchBudgetTemplate()
-        if (template) await app.userDb!.saveBudgetTemplate({ ...template, categories })
-        else await app.userDb!.createBudgetTemplate(categories)
+        if (template) await app.userDb!.saveBudgetTemplate({ ...template, categories: snapshot })
+        else await app.userDb!.createBudgetTemplate(snapshot)
         $q.notify({ type: 'positive', message: 'Шаблон обновлён' })
     } catch (error) {
         console.error('Не удалось сохранить шаблон статей:', error)

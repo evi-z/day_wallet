@@ -17,6 +17,7 @@ export type UseDatabaseDocumentRefOptions<T extends object, A extends readonly s
     autoSaveToDB?: boolean,  /** Привязывать ли вотчер слежения за изменениями основных значений к сохранению в БД (Def: true) */
     additionalMetadataFields?: A  /** Дополнительные поля метаданных, исключаемые из основных значений (Def: []) */
     bindToRemote?: InstanceOfDBWithRemoteSync | undefined
+    saveDebounceMs?: number  /** Объединять частые изменения в одну запись (Def: без задержки) */
 }
 
 const UseDatabaseDocumentRefDefaultOptions: Partial<UseDatabaseDocumentRefOptions<object, readonly []>> = {
@@ -114,7 +115,7 @@ export const useDatabaseDocumentRef = <T extends object, A extends readonly stri
         metadata.value._rev = response.rev  // Обновляем ревизию в метаданных
     }
 
-    const saveToDB = () => {
+    const saveNow = () => {
         saveChain = saveChain.then(async () => {
             try {
                 await saveOnce()
@@ -133,6 +134,25 @@ export const useDatabaseDocumentRef = <T extends object, A extends readonly stri
         })
 
         return saveChain
+    }
+
+    let saveTimer: ReturnType<typeof setTimeout> | undefined
+    let pendingSaveResolvers: Array<() => void> = []
+
+    const saveToDB = () => {
+        if (!options.saveDebounceMs) return saveNow()
+
+        return new Promise<void>((resolve) => {
+            pendingSaveResolvers.push(resolve)
+            if (saveTimer) clearTimeout(saveTimer)
+            saveTimer = setTimeout(async () => {
+                saveTimer = undefined
+                await saveNow()
+                const resolvers = pendingSaveResolvers
+                pendingSaveResolvers = []
+                resolvers.forEach(callback => callback())
+            }, options.saveDebounceMs)
+        })
     }
 
     return extendRef(valueRef, {

@@ -249,6 +249,16 @@ const removeAccount = (account: BudgetSavingsAccount) => {
         return
     }
 
+    const linked = all.some(item => listLeaves(item.categories)
+        .some(leaf => leaf.savingsAccountId === account.id))
+    if (linked) {
+        $q.notify({
+            type: 'warning',
+            message: 'Счёт привязан к статье. Сначала отвяжите его в «Настроить статьи».',
+        })
+        return
+    }
+
     $q.dialog({
         title: 'Удалить сберегательный счёт?',
         message: `«${account.name}» будет удалён из настроек. Статьи, привязанные к нему, останутся.`,

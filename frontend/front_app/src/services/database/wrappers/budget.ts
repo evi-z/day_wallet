@@ -16,6 +16,8 @@ export const useBudgetPeriodRef = (documentId: string) => {
         },
         saveFn: (doc) => app.userDb!.saveBudgetPeriod(doc),
         bindToRemote: remoteBinding(),
+        // Суммы и заметки меняются при каждом нажатии: пишем пачкой.
+        saveDebounceMs: 500,
     })
 }
 
@@ -32,6 +34,7 @@ export const useBudgetSettingsRef = () => {
         },
         saveFn: (doc) => app.userDb!.saveBudgetSettings(doc),
         bindToRemote: remoteBinding(),
+        saveDebounceMs: 500,
     })
 }
 
