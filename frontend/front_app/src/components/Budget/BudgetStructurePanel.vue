@@ -1,18 +1,5 @@
 <template>
-    <q-page class="structure-page">
-        <InnerLoading :showing="loading" />
-
-        <div class="structure-head">
-            <q-btn flat round dense icon="sym_o_arrow_back" class="structure-back"
-                @click="$router.push({ name: PAGES.Plan })">
-                <q-tooltip>К бюджету</q-tooltip>
-            </q-btn>
-            <div>
-                <div class="structure-title">Структура бюджета</div>
-                <div class="structure-subtitle">Шаблон статей и сберегательные счета</div>
-            </div>
-        </div>
-
+    <div class="structure-panel">
         <q-card flat bordered class="structure-card">
             <q-card-section class="structure-card__title">Шаблон статей</q-card-section>
             <q-separator />
@@ -35,7 +22,7 @@
             <q-separator />
             <q-card-section>
                 <div v-if="!accounts.length" class="structure-hint">
-                    Счетов пока нет. Создайте счёт здесь или из карточки периода.
+                    Счетов пока нет. Создайте счёт и привяжите к статье через меню статьи.
                 </div>
 
                 <div v-for="account in accounts" :key="account.id" class="account-row">
@@ -43,7 +30,8 @@
                         placeholder="Название счёта" />
                     <div class="account-field">
                         <span class="account-label">начальный остаток</span>
-                        <MoneyInput v-model="account.initialBalance" dense outlined class="account-money" />
+                        <MoneyInput v-model="account.initialBalance" dense outlined
+                            class="account-money budget-field" />
                     </div>
                     <div class="account-field">
                         <span class="account-label">сейчас</span>
@@ -56,69 +44,83 @@
                 </div>
             </q-card-section>
         </q-card>
-    </q-page>
+
+        <q-card flat bordered class="structure-card">
+            <q-card-section class="structure-card__title savings-title-row">
+                <span>Пополнения сбережений</span>
+                <q-select v-if="periods.length" v-model="selectedPeriodId" :options="periodOptions"
+                    option-value="value" option-label="label" emit-value map-options dense outlined
+                    class="period-select" />
+            </q-card-section>
+            <q-separator />
+            <q-card-section>
+                <div v-if="!periods.length" class="structure-hint">
+                    Сначала создайте период на вкладке «Распределения».
+                </div>
+                <BudgetSavingsPeriodBlock v-else-if="selectedPeriodId" :key="selectedPeriodId"
+                    :period-id="selectedPeriodId" :periods="periods" :accounts="accounts"
+                    @changed="emit('changed')" />
+            </q-card-section>
+        </q-card>
+    </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
-import InnerLoading from 'src/components/InnerLoading/index.vue';
 import MoneyInput from 'src/components/MoneyInput/index.vue';
-import BudgetCategoryRows from 'src/components/Budget/BudgetCategoryRows.vue';
-import app from 'src/services/app';
-import { useBudgetSettingsRef, useBudgetTemplateRef } from 'src/services/database/wrappers/budget';
+import BudgetCategoryRows from './BudgetCategoryRows.vue';
+import BudgetSavingsPeriodBlock from './BudgetSavingsPeriodBlock.vue';
+import { useBudgetTemplateRef } from 'src/services/database/wrappers/budget';
 import { calcAllSavingsBalances, isSavingsAccountUsed, listLeaves } from 'src/domain/budget/calc';
 import { formatMoney } from 'src/domain/budget/format';
-import { createBudgetId } from 'src/domain/budget/defaults';
 import type { BudgetSavingsAccount } from 'src/domain/budget/types';
 import type { BudgetPeriodDBData } from 'src/models/database';
-import { PAGES } from 'src/router/models';
+
+const props = defineProps<{
+    periods: BudgetPeriodDBData[],
+    accounts: BudgetSavingsAccount[],
+    ensureAccount: (name: string) => string,
+    removeAccount: (accountId: string) => void,
+}>()
+
+const emit = defineEmits<{ changed: [] }>()
 
 const $q = useQuasar()
-const settingsRef = useBudgetSettingsRef()
 const templateRef = useBudgetTemplateRef()
 
-const loading = ref(true)
 const templateReady = ref(false)
-const periods = ref<BudgetPeriodDBData[]>([])
+const selectedPeriodId = ref('')
 
-const accounts = computed(() => settingsRef.value.savingsAccounts ?? [])
 const templateCategories = computed(() => templateRef.value.categories ?? [])
+const noAllocations = () => false
 
-const balances = computed(() => calcAllSavingsBalances(periods.value, accounts.value))
+const balances = computed(() => calcAllSavingsBalances(props.periods, props.accounts))
 const balanceOf = (accountId: string) => balances.value[accountId]?.balance ?? 0
 
-const noAllocations = () => false
+const periodOptions = computed(() => [...props.periods]
+    .sort((a, b) => b.seq - a.seq)
+    .map(period => ({ label: period.label, value: period._id })))
 
 onMounted(async () => {
     try {
-        await settingsRef.initFromDB()
-        if (!settingsRef.value.savingsAccounts) settingsRef.value.savingsAccounts = []
         await templateRef.initFromDB()
         templateReady.value = true
-        periods.value = await app.userDb!.fetchBudgetPeriods()
     } catch (error) {
-        console.error('Не удалось загрузить структуру бюджета:', error)
-        $q.notify({ type: 'negative', message: 'Не удалось загрузить структуру бюджета' })
-    } finally {
-        loading.value = false
+        console.error('Не удалось загрузить шаблон статей:', error)
+        $q.notify({ type: 'negative', message: 'Не удалось загрузить шаблон статей' })
     }
 })
 
-const ensureAccount = (name: string): string => {
-    const list = settingsRef.value.savingsAccounts || (settingsRef.value.savingsAccounts = [])
-    const existing = list.find(account => account.name.toLowerCase() === name.toLowerCase())
-    if (existing) return existing.id
-
-    const account = {
-        id: createBudgetId(),
-        name,
-        initialBalance: 0,
-        createdAt: new Date().toISOString(),
+watch(() => props.periods, (periods) => {
+    if (!periods.length) {
+        selectedPeriodId.value = ''
+        return
     }
-    list.push(account)
-    return account.id
-}
+    if (!selectedPeriodId.value || !periods.some(period => period._id === selectedPeriodId.value)) {
+        selectedPeriodId.value = [...periods].sort((a, b) => b.seq - a.seq)[0]!._id
+    }
+}, { immediate: true, deep: false })
 
 const addAccount = () => {
     $q.dialog({
@@ -131,11 +133,11 @@ const addAccount = () => {
         cancel: { label: 'Отмена', flat: true },
         ok: { label: 'Создать', color: 'primary', flat: true },
         persistent: true,
-    }).onOk((name: string) => { ensureAccount(String(name).trim()) })
+    }).onOk((name: string) => { props.ensureAccount(String(name).trim()) })
 }
 
 const removeAccount = (account: BudgetSavingsAccount) => {
-    if (isSavingsAccountUsed(periods.value, account.id) || isAccountLinked(account.id)) {
+    if (isSavingsAccountUsed(props.periods, account.id) || isAccountLinked(account.id)) {
         $q.notify({
             type: 'warning',
             message: 'Счёт используется в периодах или шаблоне. Сначала отвяжите его от статей.',
@@ -149,64 +151,40 @@ const removeAccount = (account: BudgetSavingsAccount) => {
         cancel: { label: 'Отмена', flat: true },
         ok: { label: 'Удалить', color: 'negative', flat: true },
         persistent: true,
-    }).onOk(() => {
-        const list = settingsRef.value.savingsAccounts || []
-        settingsRef.value.savingsAccounts = list.filter(item => item.id !== account.id)
-    })
+    }).onOk(() => props.removeAccount(account.id))
 }
 
 const isAccountLinked = (accountId: string): boolean => {
-    const inPeriods = periods.value.some(period => listLeaves(period.categories)
+    const inPeriods = props.periods.some(period => listLeaves(period.categories)
         .some(leaf => leaf.savingsAccountId === accountId))
     if (inPeriods) return true
-    return listLeaves(templateRef.value.categories || [])
+    return listLeaves(templateCategories.value)
         .some(leaf => leaf.savingsAccountId === accountId)
 }
 </script>
 
 <style lang="scss" scoped>
-.structure-page {
-    padding: 10px 20px 24px;
+.structure-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     width: 100%;
 }
 
-.structure-head {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 14px;
-}
-
-.structure-back {
-    color: #4b5563;
-}
-
-.structure-title {
-    color: #111827;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.structure-subtitle {
-    color: #6b7280;
-    font-size: 12px;
-}
-
 .structure-card {
-    max-width: 1000px;
-    margin-bottom: 14px;
+    width: 100%;
     border-radius: 10px;
 }
 
 .structure-card__title {
-    padding: 12px 16px;
+    padding: 10px 14px;
     color: #374151;
     font-size: 13px;
     font-weight: 600;
 }
 
 .structure-hint {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     color: #6b7280;
     font-size: 12px;
     line-height: 1.45;
@@ -214,10 +192,11 @@ const isAccountLinked = (accountId: string): boolean => {
 
 .account-row {
     display: grid;
-    grid-template-columns: minmax(160px, 1.2fr) 170px minmax(110px, 0.8fr) 32px;
-    gap: 12px;
+    grid-template-columns: 220px 170px 110px 32px;
+    gap: 16px;
     align-items: center;
-    padding: 6px 0;
+    justify-content: start;
+    padding: 5px 0;
     border-bottom: 1px solid #f1f5f9;
 }
 
@@ -236,19 +215,6 @@ const isAccountLinked = (accountId: string): boolean => {
     font-size: 10px;
 }
 
-.account-money :deep(.q-field__control) {
-    height: 30px;
-    min-height: 30px;
-}
-
-.account-money :deep(.q-field__marginal) {
-    height: 30px;
-}
-
-.account-money :deep(input) {
-    font-size: 12.5px;
-}
-
 .account-balance {
     color: #111827;
     font-size: 13px;
@@ -260,18 +226,30 @@ const isAccountLinked = (accountId: string): boolean => {
     color: #b91c1c;
 }
 
-@media (max-width: 767px) {
-    .structure-page {
-        padding: 8px 10px 18px;
-    }
+.savings-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
 
+.period-select {
+    min-width: 190px;
+}
+
+@media (max-width: 767px) {
     .account-row {
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        justify-content: stretch;
         row-gap: 6px;
     }
 
     .account-name {
         grid-column: 1 / -1;
+    }
+
+    .period-select {
+        min-width: 0;
+        flex: 1 1 auto;
     }
 }
 </style>

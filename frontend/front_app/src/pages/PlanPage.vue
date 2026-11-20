@@ -2,36 +2,26 @@
     <q-page class="budget-page">
         <InnerLoading :showing="loading" />
 
-        <div class="budget-head">
-            <div class="budget-heading">
-                <div class="budget-title">Бюджетирование</div>
-                <div class="budget-subtitle">Приходы, статьи и сбережения по финансовым периодам</div>
-            </div>
-            <div class="budget-actions">
-                <q-btn flat dense no-caps icon="sym_o_account_tree" class="budget-structure"
-                    :label="$q.screen.gt.xs ? 'Структура' : undefined"
-                    @click="openStructure">
-                    <q-tooltip>Шаблоны и сберегательные счета</q-tooltip>
-                </q-btn>
-                <q-btn unelevated no-caps color="primary" icon="sym_o_add" label="Период"
-                    @click="createOpen = true" />
-            </div>
-        </div>
-
         <q-tabs v-model="tab" dense no-caps align="left" class="budget-tabs"
             active-color="primary" indicator-color="primary" :mobile-arrows="false">
             <q-tab name="allocations" label="Распределения" />
             <q-tab name="summary" label="Сводка" />
+            <q-tab name="structure" label="Структура" />
         </q-tabs>
 
-        <q-tab-panels v-model="tab" class="budget-panels" animated>
+        <q-tab-panels v-model="tab" class="budget-panels">
             <q-tab-panel name="allocations" class="budget-panel">
+                <div class="tab-toolbar">
+                    <q-btn unelevated no-caps color="primary" icon="sym_o_add" label="Период"
+                        @click="createOpen = true" />
+                </div>
+
                 <div v-if="!loading && !periods.length" class="budget-empty">
                     <q-icon name="sym_o_trending_up" size="40px" />
                     <div class="budget-empty__title">Пока нет ни одного периода</div>
                     <div class="budget-empty__text">
                         Создайте период, укажите приход и распределите его по статьям.
-                        Сберегательные счета можно добавить отдельно.
+                        Сберегательные счета настраиваются на вкладке «Структура».
                     </div>
                     <q-btn unelevated no-caps color="primary" icon="sym_o_add" label="Создать период"
                         @click="createOpen = true" />
@@ -39,8 +29,7 @@
 
                 <div v-if="periods.length" class="budget-list">
                     <BudgetPeriodCard v-for="(doc, index) in periods" :key="doc._id" :doc-id="doc._id"
-                        :periods="periods" :accounts="accounts" :ensure-account="ensureAccount"
-                        :remove-account="removeAccount" :set-account-initial="setAccountInitial"
+                        :accounts="accounts" :ensure-account="ensureAccount"
                         :is-latest="index === periods.length - 1" @delete="handleDelete"
                         @changed="scheduleReload" @make-template="handleMakeTemplate" />
                 </div>
@@ -48,6 +37,11 @@
 
             <q-tab-panel name="summary" class="budget-panel">
                 <BudgetSummary :periods="periods" :accounts="accounts" />
+            </q-tab-panel>
+
+            <q-tab-panel name="structure" class="budget-panel">
+                <BudgetStructurePanel :periods="periods" :accounts="accounts"
+                    :ensure-account="ensureAccount" :remove-account="removeAccount" @changed="scheduleReload" />
             </q-tab-panel>
         </q-tab-panels>
 
@@ -58,25 +52,23 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useQuasar } from 'quasar';
-import { useRouter } from 'vue-router';
 import InnerLoading from 'src/components/InnerLoading/index.vue';
 import BudgetPeriodCard from 'src/components/Budget/BudgetPeriodCard.vue';
 import BudgetPeriodDialog from 'src/components/Budget/BudgetPeriodDialog.vue';
 import BudgetSummary from 'src/components/Budget/BudgetSummary.vue';
+import BudgetStructurePanel from 'src/components/Budget/BudgetStructurePanel.vue';
 import app from 'src/services/app';
 import { ensureBudgetTemplate, useBudgetSettingsRef } from 'src/services/database/wrappers/budget';
 import { createBudgetId, createPeriodData, nextPeriodSeq, suggestNextLabel } from 'src/domain/budget/defaults';
 import type { BudgetCategory } from 'src/domain/budget/types';
 import type { BudgetPeriodDBData } from 'src/models/database';
-import { PAGES } from 'src/router/models';
 
 const $q = useQuasar()
-const $router = useRouter()
 
 const loading = ref(true)
 const periods = ref<BudgetPeriodDBData[]>([])
 const createOpen = ref(false)
-const tab = ref<'allocations' | 'summary'>('allocations')
+const tab = ref<'allocations' | 'summary' | 'structure'>('allocations')
 const settingsRef = useBudgetSettingsRef()
 
 const accounts = computed(() => settingsRef.value.savingsAccounts ?? [])
@@ -113,10 +105,6 @@ onBeforeUnmount(() => {
     if (reloadTimer) clearTimeout(reloadTimer)
 })
 
-const openStructure = () => {
-    void $router.push({ name: PAGES.BudgetStructure })
-}
-
 const ensureAccount = (name: string): string => {
     const accountsList = settingsRef.value.savingsAccounts || (settingsRef.value.savingsAccounts = [])
     const existing = accountsList.find(account => account.name.toLowerCase() === name.toLowerCase())
@@ -135,11 +123,6 @@ const ensureAccount = (name: string): string => {
 const removeAccount = (accountId: string) => {
     const accountsList = settingsRef.value.savingsAccounts || []
     settingsRef.value.savingsAccounts = accountsList.filter(account => account.id !== accountId)
-}
-
-const setAccountInitial = (accountId: string, value: number) => {
-    const account = (settingsRef.value.savingsAccounts || []).find(item => item.id === accountId)
-    if (account) account.initialBalance = value
 }
 
 const handleCreate = async (payload: { label: string, incomeName: string, incomeAmount: number }) => {
@@ -189,43 +172,11 @@ const handleMakeTemplate = async (categories: BudgetCategory[]) => {
     flex-direction: column;
     width: 100%;
     min-height: 100%;
-    padding: 10px 20px 24px;
-}
-
-.budget-head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 8px;
-}
-
-.budget-title {
-    color: #111827;
-    font-size: 18px;
-    font-weight: 600;
-    line-height: 1.25;
-}
-
-.budget-subtitle {
-    margin-top: 2px;
-    color: #6b7280;
-    font-size: 12px;
-}
-
-.budget-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex: 0 0 auto;
-}
-
-.budget-structure {
-    color: #4b5563;
+    padding: 6px 20px 24px;
 }
 
 .budget-tabs {
-    margin: 0 -4px 8px;
+    margin: 0 -4px 6px;
     border-bottom: 1px solid #e5e7eb;
 }
 
@@ -251,6 +202,12 @@ const handleMakeTemplate = async (categories: BudgetCategory[]) => {
 
 .budget-panel {
     padding: 0;
+}
+
+.tab-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin: 4px 0 10px;
 }
 
 .budget-list {
@@ -286,19 +243,7 @@ const handleMakeTemplate = async (categories: BudgetCategory[]) => {
 
 @media (max-width: 599px) {
     .budget-page {
-        padding: 8px 8px 16px;
-    }
-
-    .budget-head {
-        align-items: center;
-    }
-
-    .budget-title {
-        font-size: 16px;
-    }
-
-    .budget-subtitle {
-        display: none;
+        padding: 4px 8px 16px;
     }
 }
 </style>

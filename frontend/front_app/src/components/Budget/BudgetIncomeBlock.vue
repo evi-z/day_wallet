@@ -8,7 +8,7 @@
             <q-input v-model="income.name" dense borderless class="income-name" placeholder="Название прихода"
                 @click.stop />
 
-            <MoneyInput v-if="showAmount" v-model="income.amount" class="income-amount" dense outlined
+            <MoneyInput v-if="showAmount" v-model="income.amount" class="income-amount budget-field" dense outlined
                 @click.stop />
 
             <div v-if="showTotals" class="income-chips">

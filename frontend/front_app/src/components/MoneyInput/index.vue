@@ -1,5 +1,5 @@
 <template>
-    <q-input ref="inputRef" v-model="formattedValue" :label="label" :dense="dense" :outlined="outlined"
+    <q-input ref="inputRef" v-model="formattedValue" :label="label || undefined" :dense="dense" :outlined="outlined"
         :readonly="readonly" hide-bottom-space input-class="money-input__field" @focus="handleFocus"
         @blur="handleBlur" @keyup.enter="handleEnter" />
 </template>

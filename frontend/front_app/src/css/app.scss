@@ -4,3 +4,17 @@ html, body, #q-app {
     width: 100%;
     overflow: hidden;
 }
+
+/* Компактные денежные поля бюджета: текст по центру по вертикали и справа. */
+.budget-field .q-field__native {
+    padding: 0;
+    align-items: center;
+}
+
+.budget-field input {
+    height: 30px;
+    padding: 0 10px;
+    font-size: 12.5px;
+    line-height: 30px;
+    text-align: right;
+}

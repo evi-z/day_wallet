@@ -1,5 +1,11 @@
 <template>
     <div class="rows">
+        <div v-if="income" class="cat-row cat-head">
+            <span class="cat-head__name">Статья</span>
+            <span class="cat-head__amount">Сумма</span>
+            <span />
+        </div>
+
         <div v-for="category in categories" :key="category.id" class="group">
             <div class="cat-row cat-row--category">
                 <div class="cat-name-wrap">
@@ -8,7 +14,7 @@
                 </div>
 
                 <MoneyInput v-if="income && !category.children.length" :model-value="amountOf(category.id)"
-                    dense outlined class="cat-amount"
+                    dense outlined class="cat-amount budget-field"
                     @update:model-value="value => setAmount(category.id, value)" />
                 <div v-else-if="income" class="cat-total">{{ formatMoney(categoryTotal(category.id)) }}</div>
 
@@ -54,7 +60,7 @@
                     <q-icon v-if="child.savingsAccountId" name="sym_o_savings" size="14px" class="cat-savings" />
                 </div>
 
-                <MoneyInput v-if="income" :model-value="amountOf(child.id)" dense outlined class="cat-amount"
+                <MoneyInput v-if="income" :model-value="amountOf(child.id)" dense outlined class="cat-amount budget-field"
                     @update:model-value="value => setAmount(child.id, value)" />
 
                 <q-btn flat round dense size="sm" icon="sym_o_more_horiz" class="cat-menu">
@@ -203,6 +209,41 @@ const createAccount = (node: BudgetCategory | BudgetSubcategory) => {
     gap: 8px;
     align-items: center;
     min-height: 32px;
+    padding: 0 6px;
+    border-radius: 4px;
+}
+
+.cat-row:hover {
+    background: rgba(6, 95, 70, 0.045);
+}
+
+.group:nth-child(even) .cat-row {
+    background: #fbfcfd;
+}
+
+.group:nth-child(even) .cat-row:hover {
+    background: rgba(6, 95, 70, 0.045);
+}
+
+.cat-head {
+    min-height: 24px;
+    color: #9ca3af;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.cat-head:hover {
+    background: transparent;
+}
+
+.cat-head__name {
+    padding-left: 2px;
+}
+
+.cat-head__amount {
+    padding-right: 6px;
+    text-align: right;
 }
 
 .cat-row--sub {
