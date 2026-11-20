@@ -210,6 +210,20 @@ export const calcAllSavingsBalances = (
     return result
 }
 
+/** Остаток сберегательного счёта на конец указанного периода. */
+export const calcSavingsBalanceUpTo = (
+    periods: Array<BudgetPeriodData & { _id?: string }>,
+    account: BudgetSavingsAccount,
+    periodId: string,
+): number => {
+    const target = periods.find(period => period._id === periodId)
+    if (!target) return calcSavingsBalance(periods, account).balance
+    return calcSavingsBalance(
+        periods.filter(period => period.seq <= target.seq),
+        account,
+    ).balance
+}
+
 /** Проверяет, есть ли по листу распределения хотя бы в одном приходе. */
 export const hasLeafAllocations = (period: BudgetPeriodData, leafId: string): boolean => {
     return period.incomes.some(income => Math.abs(toNumber(income.allocations?.[leafId])) > 0.004)

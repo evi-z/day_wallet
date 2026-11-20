@@ -55,6 +55,24 @@
                     <q-btn flat dense no-caps color="primary" icon="sym_o_add" label="Добавить приход"
                         class="add-income" @click="addIncome" />
 
+                    <template v-if="accounts.length">
+                        <div class="section-label section-label--savings">Сбережения</div>
+                        <div v-for="account in accounts" :key="account.id" class="savings-line">
+                            <div class="savings-line__name">
+                                <q-icon name="sym_o_savings" size="15px" class="savings-line__icon" />
+                                <span>{{ account.name }}</span>
+                            </div>
+                            <div class="savings-line__metric">
+                                <span class="savings-line__label">из приходов</span>
+                                <span class="savings-line__value">{{ formatMoney(savings[account.id]?.allocated ?? 0) }}</span>
+                            </div>
+                            <div class="savings-line__metric savings-line__metric--balance">
+                                <span class="savings-line__label">остаток</span>
+                                <span class="savings-line__value">{{ formatMoney(savings[account.id]?.balance ?? 0) }}</span>
+                            </div>
+                        </div>
+                    </template>
+
                     <q-input v-model="period.notes" type="textarea" autogrow outlined dense
                         label="Заметки периода" class="period-notes" />
                 </div>
@@ -69,13 +87,15 @@ import { useQuasar } from 'quasar';
 import MoneyInput from 'src/components/MoneyInput/index.vue';
 import BudgetIncomeBlock from './BudgetIncomeBlock.vue';
 import { useBudgetPeriodRef } from 'src/services/database/wrappers/budget';
-import { calcPeriodTotals } from 'src/domain/budget/calc';
+import { calcPeriodTotals, calcSavingsAllocatedInPeriod, calcSavingsBalanceUpTo } from 'src/domain/budget/calc';
 import { formatMoney } from 'src/domain/budget/format';
 import { createIncome } from 'src/domain/budget/defaults';
 import type { BudgetCategory, BudgetIncome, BudgetSavingsAccount } from 'src/domain/budget/types';
+import type { BudgetPeriodDBData } from 'src/models/database';
 
 const props = defineProps<{
     docId: string,
+    periods: BudgetPeriodDBData[],
     accounts: BudgetSavingsAccount[],
     ensureAccount: (name: string) => string,
     isLatest?: boolean,
@@ -96,6 +116,19 @@ const collapsed = ref(false)
 
 const period = computed(() => periodRef.value)
 const totals = computed(() => calcPeriodTotals(period.value))
+
+const savings = computed(() => {
+    const own = { ...period.value, _id: props.docId }
+    const all = [...props.periods.filter(item => item._id !== props.docId), own]
+    const result: Record<string, { allocated: number, balance: number }> = {}
+    for (const account of props.accounts) {
+        result[account.id] = {
+            allocated: calcSavingsAllocatedInPeriod(period.value, account.id),
+            balance: calcSavingsBalanceUpTo(all, account, props.docId),
+        }
+    }
+    return result
+})
 
 const notifyChanged = async () => { emit('changed') }
 
@@ -277,6 +310,63 @@ const confirmDelete = () => {
     margin-top: 2px;
 }
 
+.section-label--savings {
+    margin-top: 12px;
+}
+
+.savings-line {
+    display: grid;
+    grid-template-columns: minmax(180px, 240px) 120px 120px;
+    gap: 16px;
+    align-items: center;
+    padding: 4px 6px;
+    border-radius: 4px;
+}
+
+.savings-line:nth-child(even) {
+    background: #fbfcfd;
+}
+
+.savings-line__name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    color: #1f2937;
+    font-size: 13px;
+}
+
+.savings-line__name span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.savings-line__icon {
+    color: #0f766e;
+}
+
+.savings-line__metric {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.savings-line__label {
+    color: #9ca3af;
+    font-size: 10px;
+}
+
+.savings-line__value {
+    color: #111827;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.savings-line__metric--balance .savings-line__value {
+    font-weight: 600;
+}
+
 .period-notes {
     margin-top: 10px;
 }
@@ -294,6 +384,15 @@ const confirmDelete = () => {
         order: 5;
         width: 100%;
         margin-left: 0;
+    }
+
+    .savings-line {
+        grid-template-columns: minmax(0, 1fr) 100px;
+        row-gap: 4px;
+    }
+
+    .savings-line__name {
+        grid-column: 1 / -1;
     }
 }
 </style>

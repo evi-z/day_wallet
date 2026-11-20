@@ -6,6 +6,7 @@ import {
     calcIncomeTotals,
     calcPeriodTotals,
     calcSavingsBalance,
+    calcSavingsBalanceUpTo,
     hasLeafAllocations,
     listLeaves,
 } from '../src/domain/budget/calc.ts'
@@ -134,6 +135,22 @@ test('период без пополнений не попадает в исто
     const first = period({ seq: 1 })
     const second = period({ seq: 2, label: 'Декабрь 2026' })
     assert.deepEqual(calcSavingsBalance([first, second], account).history, [])
+})
+
+test('остаток сбережений на конец выбранного периода', () => {
+    const first = { ...period({
+        seq: 1,
+        incomes: [{ id: 'i1', name: 'Зарплата', amount: 100000, allocations: { 'sub-pillow': 10000 } }],
+        savingsDeltas: { 'acc-pillow': 500 },
+    }), _id: 'p1' }
+    const second = { ...period({
+        seq: 2,
+        label: 'Декабрь 2026',
+        incomes: [{ id: 'i2', name: 'Зарплата', amount: 100000, allocations: { 'sub-pillow': 5000 } }],
+    }), _id: 'p2' }
+
+    assert.equal(calcSavingsBalanceUpTo([first, second], account, 'p1'), 210500)
+    assert.equal(calcSavingsBalanceUpTo([first, second], account, 'p2'), 215500)
 })
 
 test('несколько сберегательных счетов считаются независимо', () => {

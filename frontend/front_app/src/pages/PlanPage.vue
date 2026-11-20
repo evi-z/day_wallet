@@ -29,7 +29,7 @@
 
                 <div v-if="periods.length" class="budget-list">
                     <BudgetPeriodCard v-for="(doc, index) in periods" :key="doc._id" :doc-id="doc._id"
-                        :accounts="accounts" :ensure-account="ensureAccount"
+                        :periods="periods" :accounts="accounts" :ensure-account="ensureAccount"
                         :is-latest="index === periods.length - 1" @delete="handleDelete"
                         @changed="scheduleReload" @make-template="handleMakeTemplate" />
                 </div>

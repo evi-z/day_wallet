@@ -298,7 +298,8 @@ const logoutBtnClick = async () => {
 .app-page-container {
     background: #f5f7f6;
     height: 100vh;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .app-mobile-nav {
