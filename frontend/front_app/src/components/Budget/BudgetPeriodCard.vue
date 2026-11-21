@@ -60,10 +60,18 @@
                     </div>
                     <template v-if="accounts.length">
                         <div class="section-label section-label--savings">Сбережения</div>
+                        <div class="savings-line savings-line--head">
+                            <span>Счёт</span>
+                            <span class="savings-head__metric">из приходов</span>
+                            <span class="savings-head__metric">доп. пополнение</span>
+                            <span class="savings-head__metric">остаток</span>
+                            <span />
+                        </div>
                         <div v-for="account in accounts" :key="account.id" class="savings-line">
                             <div class="savings-line__name">
                                 <q-icon name="sym_o_savings" size="15px" class="savings-line__icon" />
                                 <span>{{ account.name }}</span>
+                                <span class="savings-line__leader" />
                             </div>
                             <div class="savings-line__metric">
                                 <span class="savings-line__label">из приходов</span>
@@ -350,15 +358,27 @@ const confirmDelete = () => {
 .savings-line {
     display: grid;
     width: 100%;
-    grid-template-columns: minmax(180px, 1.6fr) minmax(90px, 0.9fr) minmax(140px, 1.2fr) minmax(100px, 0.9fr);
-    gap: 16px;
+    grid-template-columns: minmax(180px, 1fr) 110px 160px 120px 28px;
+    gap: 12px;
     align-items: center;
     padding: 4px 6px;
     border-radius: 4px;
+    border-bottom: 1px solid #f5f7f9;
 }
 
-.savings-line:nth-child(even) {
-    background: #fbfcfd;
+.savings-line--head {
+    min-height: 22px;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+    color: #9ca3af;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.savings-head__metric {
+    text-align: right;
 }
 
 .savings-line__name {
@@ -376,6 +396,13 @@ const confirmDelete = () => {
     white-space: nowrap;
 }
 
+.savings-line__leader {
+    flex: 1 1 auto;
+    align-self: center;
+    margin-left: 8px;
+    border-bottom: 1px dotted #d5dbe3;
+}
+
 .savings-line__icon {
     color: #0f766e;
 }
@@ -383,10 +410,13 @@ const confirmDelete = () => {
 .savings-line__metric {
     display: flex;
     flex-direction: column;
+    align-items: flex-end;
     gap: 1px;
+    text-align: right;
 }
 
 .savings-line__label {
+    display: none;
     color: #9ca3af;
     font-size: 10px;
 }
@@ -395,6 +425,7 @@ const confirmDelete = () => {
     color: #111827;
     font-size: 13px;
     font-variant-numeric: tabular-nums;
+    text-align: right;
 }
 
 .savings-line__metric--balance .savings-line__value {
@@ -436,6 +467,18 @@ const confirmDelete = () => {
     .savings-line {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         row-gap: 4px;
+    }
+
+    .savings-line--head {
+        display: none;
+    }
+
+    .savings-line__label {
+        display: block;
+    }
+
+    .savings-line__leader {
+        display: none;
     }
 
     .savings-line__name {
