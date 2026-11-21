@@ -72,21 +72,13 @@ const totals = computed(() => calcIncomeTotals(props.period, props.income))
 const hasAllocations = (leafId: string) => hasLeafAllocations(props.period, leafId)
 
 const confirmRemove = () => {
-    const hasValues = Object.values(props.income.allocations || {}).some(value => !!value)
-    const remove = () => emit('remove', props.income)
-
-    if (!hasValues) {
-        remove()
-        return
-    }
-
     $q.dialog({
         title: 'Удалить приход?',
-        message: `«${props.income.name || 'Приход'}» со всеми распределениями будет удалён.`,
+        message: `«${props.income.name || 'Приход'}» со всеми распределениями будет удалён. Это действие нельзя отменить.`,
         cancel: { label: 'Отмена', flat: true },
         ok: { label: 'Удалить', color: 'negative', flat: true },
         persistent: true,
-    }).onOk(remove)
+    }).onOk(() => emit('remove', props.income))
 }
 </script>
 

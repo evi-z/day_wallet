@@ -21,8 +21,7 @@
                 <q-btn flat round dense size="sm" icon="sym_o_more_horiz" class="cat-menu">
                     <q-menu>
                         <q-list dense style="min-width: 220px">
-                            <q-item v-if="!category.children.length" clickable v-close-popup
-                                @click="addChild(category)">
+                            <q-item clickable v-close-popup @click="addChild(category)">
                                 <q-item-section>Добавить подстатью</q-item-section>
                             </q-item>
                             <template v-if="!category.children.length">

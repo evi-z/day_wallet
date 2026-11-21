@@ -45,16 +45,19 @@
                 <q-separator />
 
                 <div class="period-body">
-                    <div class="section-label">Приходы</div>
+                    <div class="section-head">
+                        <div class="section-label">Приходы</div>
+                        <q-btn flat round dense size="sm" icon="sym_o_add" class="section-add"
+                            aria-label="Добавить приход" @click="addIncome">
+                            <q-tooltip>Добавить приход</q-tooltip>
+                        </q-btn>
+                    </div>
                     <div class="income-list">
                         <BudgetIncomeBlock v-for="income in period.incomes" :key="income.id" :income="income"
                             :period="period" :accounts="accounts" :ensure-account="ensureAccount"
                             :show-amount="period.incomes.length > 1" :show-totals="period.incomes.length > 1"
                             @remove="removeIncome" />
                     </div>
-                    <q-btn flat dense no-caps color="primary" icon="sym_o_add" label="Добавить приход"
-                        class="add-income" @click="addIncome" />
-
                     <template v-if="accounts.length">
                         <div class="section-label section-label--savings">Сбережения</div>
                         <div v-for="account in accounts" :key="account.id" class="savings-line">
@@ -325,8 +328,19 @@ const confirmDelete = () => {
     gap: 6px;
 }
 
-.add-income {
-    margin-top: 2px;
+.section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.section-head .section-label {
+    margin-bottom: 0;
+}
+
+.section-add {
+    color: #4b5563;
 }
 
 .section-label--savings {
@@ -335,7 +349,8 @@ const confirmDelete = () => {
 
 .savings-line {
     display: grid;
-    grid-template-columns: minmax(160px, 220px) 110px 150px 120px;
+    width: 100%;
+    grid-template-columns: minmax(180px, 1.6fr) minmax(90px, 0.9fr) minmax(140px, 1.2fr) minmax(100px, 0.9fr);
     gap: 16px;
     align-items: center;
     padding: 4px 6px;
